@@ -1,0 +1,42 @@
+using UnityEngine;
+
+public class GameplaySceneBootstrapper : MonoBehaviour
+{
+    public GameObject storePrefab;
+    public Terrain terrain; // MUST use the same TerrainData asset as MapPlacement's terrain
+    public DayManager dayManager;
+
+    void Awake()
+    {
+        // Must match MapPlacement's MapSetup.CenterTerrainAtOrigin() exactly - if the two scenes'
+        // terrains aren't positioned identically, the same (x,z) coordinate maps to different ground.
+        Vector3 size = terrain.terrainData.size;
+        terrain.transform.position = new Vector3(-size.x / 2f, 0f, -size.z / 2f);
+    }
+
+    void Start()
+    {
+        if (GameSessionData.ChosenLot == null)
+        {
+            Debug.LogError("No lot was chosen before loading MainGameplay - did you skip the MapPlacement scene?");
+            return;
+        }
+
+        Vector2 chosenPos = GameSessionData.ChosenLot.position; // recorded (x, z) at the moment of placement
+        float groundHeight = terrain.SampleHeight(new Vector3(chosenPos.x, 0f, chosenPos.y));
+        Vector3 storeSpawnPosition = new Vector3(chosenPos.x, groundHeight, chosenPos.y);
+
+        var storeInstance = Instantiate(storePrefab, storeSpawnPosition, Quaternion.identity);
+        var spawner = storeInstance.GetComponentInChildren<CustomerSpawner>();
+        spawner.Initialize(GameSessionData.ChosenLot);
+
+        // Update: also find the store's theft spawn/exit points, same pattern as CustomerSpawner -
+        // DayManager needs these to actually spawn the Thief when a theft event triggers.
+        Transform theftSpawn = storeInstance.transform.Find("ThiefSpawnPoint");
+        Transform theftExit = storeInstance.transform.Find("ThiefExitPoint");
+        if (theftSpawn == null || theftExit == null)
+            Debug.LogWarning("StorePrefab is missing a ThiefSpawnPoint/ThiefExitPoint child - theft events won't be able to spawn a Thief.");
+
+        dayManager.StartGame(GameSessionData.ChosenLot, GameSessionData.ChosenLotData, spawner, theftSpawn, theftExit);
+    }
+}

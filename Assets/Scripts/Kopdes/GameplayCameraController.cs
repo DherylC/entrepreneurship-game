@@ -1,0 +1,76 @@
+using UnityEngine;
+
+public class GameplayCameraController : MonoBehaviour
+{
+    [Header("Default position (set at runtime once the store exists)")]
+    public Transform storeTransform;
+    public float fixedHeight = 30f;         // camera's constant Y position - never changes after Start()
+    public float lookAngle = 50f;           // downward tilt in degrees (0 = flat horizon, 90 = straight top-down)
+    public float defaultDistanceBack = 15f; // horizontal offset behind the store when the scene first loads
+
+    [Header("Pan (hold left OR right mouse button + drag)")]
+    public float panSpeed = 1f;
+
+    [Header("Zoom (scroll wheel - adjusts orthographic size, camera position never moves)")]
+    public Camera cam;
+    public float zoomSpeed = 5f;
+    public float minOrthoSize = 5f;
+    public float maxOrthoSize = 40f;
+
+    Vector3 lastMousePosition;
+
+    void Start()
+    {
+        if (cam == null) cam = GetComponent<Camera>();
+        cam.orthographic = true; // required for fixed-height zoom to make sense
+
+        transform.rotation = Quaternion.Euler(lookAngle, 0f, 0f);
+
+        if (storeTransform != null) SnapToStore();
+    }
+
+    // Called by GameplaySceneBootstrapper right after the store is instantiated.
+    public void SnapToStore()
+    {
+        Vector3 backOffset = -transform.forward * defaultDistanceBack;
+        Vector3 target = storeTransform.position + backOffset;
+        transform.position = new Vector3(target.x, fixedHeight, target.z); // Y is always fixedHeight, never anything else
+    }
+
+    void Update()
+    {
+        HandlePan();
+        HandleZoom();
+    }
+
+    void HandlePan()
+    {
+        // Update: MainGameplay doesn't need left-click reserved for anything exclusive
+        // (unlike MapPlacement, where left-click must stay dedicated to confirming placement),
+        // so both buttons work here for a more forgiving feel.
+        bool panPressed = Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1);
+        bool panHeld = Input.GetMouseButton(0) || Input.GetMouseButton(1);
+
+        if (panPressed) lastMousePosition = Input.mousePosition;
+
+        if (panHeld)
+        {
+            Vector3 delta = Input.mousePosition - lastMousePosition;
+            Vector3 right = transform.right;
+            Vector3 forwardFlat = Vector3.Cross(right, Vector3.up); // flat forward, ignoring the downward tilt
+
+            Vector3 move = (-right * delta.x - forwardFlat * delta.y) * panSpeed * Time.deltaTime;
+            move.y = 0f; // height is never touched by panning
+
+            transform.position += move;
+            lastMousePosition = Input.mousePosition;
+        }
+    }
+
+    void HandleZoom()
+    {
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (Mathf.Abs(scroll) > 0.0001f)
+            cam.orthographicSize = Mathf.Clamp(cam.orthographicSize - scroll * zoomSpeed, minOrthoSize, maxOrthoSize);
+    }
+}

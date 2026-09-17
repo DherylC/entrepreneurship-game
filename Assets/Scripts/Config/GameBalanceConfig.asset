@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99eb1fe70eec2db4a9c30ea0445f1e8d, type: 3}
+  m_Name: GameBalanceConfig
+  m_EditorClassIdentifier: Assembly-CSharp::GameBalanceConfig
+  startingCash: 50000
+  openHour: 8
+  closeHour: 20
+  realSecondsPerDay: 210
+  flatDeliveryFee: 20000
+  baseCustomersPerDay: 48
+  maxVisibleCustomersPerHour: 8
+  minSellMultiplier: 0.5
+  maxSellMultiplier: 3
+  maxUpgradeLevel: 20
+  capacityCurve:
+    baseCost: 20000
+    growthRate: 1.15
+    baseEffect: 30
+    effectPerLevel: 20
+  decorCurve:
+    baseCost: 15000
+    growthRate: 1.1
+    baseEffect: 1
+    effectPerLevel: 0.2
+  facilityCurve:
+    baseCost: 25000
+    growthRate: 1.1
+    baseEffect: 1
+    effectPerLevel: 0.2
+  theftBaseDailyChance: 0.5

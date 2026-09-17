@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7632756e1e582884682bf85c7e6ff17e, type: 3}
+  m_Name: Lot_Midrange
+  m_EditorClassIdentifier: Assembly-CSharp::LotData
+  lotName: Midrange
+  basePurchaseCost: 15000
+  minTrafficMultiplier: 0.8
+  maxTrafficMultiplier: 0.8
+  minPriceMultiplier: 0.8
+  maxPriceMultiplier: 0.8
+  minEventChanceMultiplier: 0.8
+  maxEventChanceMultiplier: 0.8
