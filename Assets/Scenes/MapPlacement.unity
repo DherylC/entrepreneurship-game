@@ -1466,7 +1466,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6edfd0f18f1f25b488917ff6589764b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapPlacementUI
-  previewLabelRoot: {fileID: 0}
+  previewLabelRoot: {fileID: 486433414}
   categoryText: {fileID: 1015947107}
   priceText: {fileID: 1101986883}
   trafficText: {fileID: 42634547}

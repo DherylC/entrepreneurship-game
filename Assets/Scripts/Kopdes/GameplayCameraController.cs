@@ -8,6 +8,20 @@ public class GameplayCameraController : MonoBehaviour
     public float lookAngle = 50f;           // downward tilt in degrees (0 = flat horizon, 90 = straight top-down)
     public float defaultDistanceBack = 15f; // horizontal offset behind the store when the scene first loads
 
+    // Update: added WASD movement, since drag-panning alone wasn't enough - matches the
+    // request for keyboard movement here too, same as MapPlacement's camera already has.
+    [Header("Movement (WASD)")]
+    public float moveSpeed = 20f;
+    public float fastMoveMultiplier = 2f; // hold Left Shift to move faster
+
+    // Update: since this camera's height is permanently fixed (no altitude to scale off, unlike
+    // MapCameraController), "more zoomed out = faster" is driven by orthographic size instead -
+    // a bigger orthographic size means you're seeing more of the map at once, i.e. zoomed out.
+    [Header("Zoom-based speed scaling - more zoomed OUT (larger orthographic size) = faster")]
+    public float referenceOrthoSize = 10f; // moveSpeed applies as-written at this zoom level
+    public float minZoomSpeedMultiplier = 0.3f;
+    public float maxZoomSpeedMultiplier = 5f;
+
     [Header("Pan (hold left OR right mouse button + drag)")]
     public float panSpeed = 1f;
 
@@ -39,8 +53,26 @@ public class GameplayCameraController : MonoBehaviour
 
     void Update()
     {
+        HandleMovement();
         HandlePan();
         HandleZoom();
+    }
+
+    float CurrentZoomSpeedMultiplier() =>
+        Mathf.Clamp(cam.orthographicSize / referenceOrthoSize, minZoomSpeedMultiplier, maxZoomSpeedMultiplier);
+
+    void HandleMovement()
+    {
+        float h = Input.GetAxis("Horizontal"); // A/D
+        float v = Input.GetAxis("Vertical");   // W/S
+        float speed = moveSpeed * CurrentZoomSpeedMultiplier() * (Input.GetKey(KeyCode.LeftShift) ? fastMoveMultiplier : 1f);
+
+        Vector3 forward = transform.forward; forward.y = 0; forward.Normalize();
+        Vector3 right = transform.right; right.y = 0; right.Normalize();
+
+        Vector3 move = (forward * v + right * h) * speed * Time.deltaTime;
+        move.y = 0f; // height stays permanently fixed, same rule as everywhere else in this camera
+        transform.position += move;
     }
 
     void HandlePan()

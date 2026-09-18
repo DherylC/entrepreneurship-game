@@ -1528,7 +1528,7 @@ MonoBehaviour:
   currentHour: 8
   currentMinute: 0
   config: {fileID: 11400000, guid: 42075e7730d032847a9426d455e445f7, type: 2}
-  speedMultiplier: 1
+  speedMultiplier: 0.68
 --- !u!4 &266441165
 Transform:
   m_ObjectHideFlags: 0
@@ -5394,18 +5394,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 961739749}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 357b40f754c5ade40b65e8481ddd92e0, type: 3}
+  m_Script: {fileID: 11500000, guid: 52fa40f60c891074e90220892fc4d259, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MapCameraController
+  m_EditorClassIdentifier: Assembly-CSharp::GameplayCameraController
+  storeTransform: {fileID: 0}
+  fixedHeight: 30
+  lookAngle: 50
+  defaultDistanceBack: 15
   moveSpeed: 20
   fastMoveMultiplier: 2
-  referenceHeight: 20
-  minHeightSpeedMultiplier: 0.3
-  maxHeightSpeedMultiplier: 5
-  lookSensitivity: 3
-  minPitch: -80
-  maxPitch: 80
-  zoomSpeed: 10
+  referenceOrthoSize: 10
+  minZoomSpeedMultiplier: 0.3
+  maxZoomSpeedMultiplier: 5
+  panSpeed: 1
+  cam: {fileID: 961739752}
+  zoomSpeed: 5
+  minOrthoSize: 5
+  maxOrthoSize: 40
 --- !u!1 &994328059
 GameObject:
   m_ObjectHideFlags: 0
