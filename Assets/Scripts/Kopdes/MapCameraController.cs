@@ -2,76 +2,115 @@ using UnityEngine;
 
 public class MapCameraController : MonoBehaviour
 {
+    [Header("Default position - starts near this point (e.g. CityCenter, or an existing store)")]
+    public Transform focusPoint;
+    public float defaultHeight = 25f;
+    public float defaultDistanceBack = 20f;
+
+    [Header("Fixed view angle - set once, never changes at runtime")]
+    public float yaw = 45f;   // 45 = facing North East (+Z = North, +X = East in Unity)
+    public float pitch = 55f; // downward tilt
+
     [Header("Movement (WASD)")]
     public float moveSpeed = 20f;
     public float fastMoveMultiplier = 2f; // hold Left Shift to move faster
 
-    [Header("Height-based speed scaling")]
-    public float referenceHeight = 20f;          // moveSpeed applies as-is at this height
-    public float minHeightSpeedMultiplier = 0.3f; // near the ground, movement is slower/more precise
-    public float maxHeightSpeedMultiplier = 5f;    // high up, movement is much faster so it never feels sluggish
+    [Header("Height-based speed scaling (applies to WASD and drag-pan)")]
+    public float referenceHeight = 20f;
+    public float minHeightSpeedMultiplier = 0.3f;
+    public float maxHeightSpeedMultiplier = 5f;
 
-    [Header("Look (hold right mouse button + drag)")]
-    public float lookSensitivity = 3f;
-    public float minPitch = -80f;
-    public float maxPitch = 80f;
-    float yaw;
-    float pitch;
+    [Header("Drag-pan (hold right mouse button) - moves position only, never rotates")]
+    public float dragPanSpeed = 1f;
+    Vector3 lastMousePosition;
 
     [Header("Zoom (scroll wheel)")]
     public float zoomSpeed = 10f;
 
+    [Header("Terrain boundary - keeps the CAMERA from flying past the edges (placement itself is unaffected)")]
+    public Terrain terrain;
+    public float boundaryMargin = 5f; // keeps the camera slightly inside the actual edge, not flush against it
+
     void Start()
     {
-        Vector3 angles = transform.eulerAngles;
-        yaw = angles.y;
-        pitch = angles.x;
+        transform.eulerAngles = new Vector3(pitch, yaw, 0f); // fixed forever - nothing else ever sets this again
+
+        if (focusPoint != null) SnapToFocusPoint();
+    }
+
+    // Positions the camera a fixed distance behind (opposite the view direction) and above
+    // whatever focusPoint is wired to - call this again manually if you ever want to "re-center"
+    // the camera later (e.g. a "recenter" button).
+    public void SnapToFocusPoint()
+    {
+        Vector3 backOffset = -transform.forward * defaultDistanceBack;
+        Vector3 target = focusPoint.position + backOffset;
+        transform.position = new Vector3(target.x, defaultHeight, target.z);
     }
 
     void Update()
     {
         HandleMovement();
-        HandleLook();
+        HandleDragPan();
         HandleZoom();
+        ClampToTerrainBounds(); // Update: runs last, after all movement/zoom this frame - clamps the CAMERA only
     }
 
-    // Update: safety net for a known Unity quirk - if focus is lost while right-click is still
-    // held (e.g. alt-tabbing mid-drag), Unity can miss the "button up" event, leaving the cursor
-    // stuck locked/hidden. This forces it back to normal the moment focus returns, regardless.
-    void OnApplicationFocus(bool hasFocus)
+    // Update: keeps the camera's own position within the terrain's actual bounds, regardless of
+    // which input moved it there (WASD, drag, or zoom). This does NOT affect PlacementController's
+    // raycast at all - the mouse can still hit and place on any part of terrain visible on screen,
+    // even near an edge, since that's driven by the mouse ray, not by where the camera itself sits.
+    void ClampToTerrainBounds()
     {
-        if (!hasFocus) Cursor.lockState = CursorLockMode.None;
+        if (terrain == null) return;
+
+        Vector3 size = terrain.terrainData.size;
+        float minX = terrain.transform.position.x + boundaryMargin;
+        float maxX = terrain.transform.position.x + size.x - boundaryMargin;
+        float minZ = terrain.transform.position.z + boundaryMargin;
+        float maxZ = terrain.transform.position.z + size.z - boundaryMargin;
+
+        Vector3 pos = transform.position;
+        pos.x = Mathf.Clamp(pos.x, minX, maxX);
+        pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
+        transform.position = pos;
     }
 
-    // Update: movement speed now scales with the camera's current altitude - flying high up
-    // feels much faster, hovering near the ground feels slower/more precise for fine placement.
+    float CurrentHeightMultiplier() =>
+        Mathf.Clamp(transform.position.y / referenceHeight, minHeightSpeedMultiplier, maxHeightSpeedMultiplier);
+
     void HandleMovement()
     {
         float h = Input.GetAxis("Horizontal"); // A/D
         float v = Input.GetAxis("Vertical");   // W/S
-
-        float heightMultiplier = Mathf.Clamp(transform.position.y / referenceHeight, minHeightSpeedMultiplier, maxHeightSpeedMultiplier);
-        float speed = moveSpeed * heightMultiplier * (Input.GetKey(KeyCode.LeftShift) ? fastMoveMultiplier : 1f);
+        float speed = moveSpeed * CurrentHeightMultiplier() * (Input.GetKey(KeyCode.LeftShift) ? fastMoveMultiplier : 1f);
 
         // Move relative to the camera's own flat forward/right (ignoring pitch), so WASD
-        // always moves along the ground plane even while looking up or down.
+        // always moves along the ground plane even with the camera tilted downward.
         Vector3 forward = transform.forward; forward.y = 0; forward.Normalize();
         Vector3 right = transform.right; right.y = 0; right.Normalize();
 
         transform.position += (forward * v + right * h) * speed * Time.deltaTime;
     }
 
-    void HandleLook()
+    // Update: this replaces the old rotate-on-drag "look" system entirely. Right-click-drag
+    // now just slides the camera along X/Z in the drag direction - the camera's rotation is
+    // fixed at Start() and is never touched again, matching a Clash of Clans-style camera.
+    void HandleDragPan()
     {
-        if (Input.GetMouseButtonDown(1)) Cursor.lockState = CursorLockMode.Locked; // hide/lock cursor while dragging
-        if (Input.GetMouseButtonUp(1)) Cursor.lockState = CursorLockMode.None;
+        if (Input.GetMouseButtonDown(1)) lastMousePosition = Input.mousePosition;
 
-        if (Input.GetMouseButton(1)) // right mouse button held
+        if (Input.GetMouseButton(1))
         {
-            yaw += Input.GetAxis("Mouse X") * lookSensitivity;
-            pitch -= Input.GetAxis("Mouse Y") * lookSensitivity;
-            pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-            transform.eulerAngles = new Vector3(pitch, yaw, 0f);
+            Vector3 delta = Input.mousePosition - lastMousePosition;
+            Vector3 right = transform.right;
+            Vector3 forwardFlat = Vector3.Cross(right, Vector3.up); // flat forward, ignoring the fixed downward tilt
+
+            Vector3 move = (-right * delta.x - forwardFlat * delta.y) * dragPanSpeed * CurrentHeightMultiplier() * Time.deltaTime;
+            move.y = 0f; // drag-panning never changes height - that's zoom's job
+
+            transform.position += move;
+            lastMousePosition = Input.mousePosition;
         }
     }
 

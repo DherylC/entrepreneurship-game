@@ -10,6 +10,7 @@ public static class UpgradeManager
         if (store.cash < cost) return false;
 
         store.cash -= cost;
+        CashEvents.Raise(-cost);
         SetLevel(store, track, currentLevel + 1);
         return true;
     }

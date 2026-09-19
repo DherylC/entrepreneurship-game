@@ -5,6 +5,7 @@ public class GameBalanceConfig : ScriptableObject
 {
     [Header("Starting Values")]
     public float startingCash = 0f;
+    public int day1StartingStockPerItem = 50; // Update: Day 1 starts with real stock instead of empty shelves, so sales can actually happen before the first restock
 
     [Header("Day/Time")]
     public int openHour = 8;
@@ -30,15 +31,18 @@ public class GameBalanceConfig : ScriptableObject
 
     [Header("Theft")]
     public float theftBaseDailyChance = 0f;
+
+    [Header("Losing Condition")]
+    public int maxComplaintsPerDay = 40; // reaching this many complaints in one day ends the game
 }
 
 [System.Serializable]
 public class UpgradeCurve
 {
-    public float baseCost = 0f;
+    public float baseCost = 20000f;
     public float growthRate = 1.15f;
-    public float baseEffect = 0f;
-    public float effectPerLevel = 0f;
+    public float baseEffect = 20f;
+    public float effectPerLevel = 20f;
 
     public float CostForLevel(int currentLevel) => baseCost * Mathf.Pow(growthRate, currentLevel);
     public float EffectAtLevel(int level) => baseEffect + (effectPerLevel * level);

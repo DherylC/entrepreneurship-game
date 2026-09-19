@@ -4,9 +4,10 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     public GameObject shoppingPanel, upgradePanel, inventoryPanel, closingSummaryPanel, tutorialBanner;
-    public GameObject inGameUI; // parent object holding shopBtn/inventoryBtn/upgradeBtn
+    public GameObject inGameUI; // parent object holding the Shop/Inventory/Upgrade HUD buttons
+    public GameObject gameOverPanel; // Update: the "Store Closed" screen
 
-    public bool PlayerReadyForNextDay;
+    public bool PlayerReadyForNextDay; // DayManager waits on this
 
     void Start()
     {
@@ -14,7 +15,8 @@ public class UIManager : MonoBehaviour
         upgradePanel.SetActive(false);
         inventoryPanel.SetActive(false);
         closingSummaryPanel.SetActive(false);
-        inGameUI.SetActive(true);
+        gameOverPanel.SetActive(false);
+        inGameUI.SetActive(true); // HUD buttons visible by default, panels are not
     }
 
     void HideAll()
@@ -30,7 +32,7 @@ public class UIManager : MonoBehaviour
         HideAll();
         inGameUI.SetActive(false);
         shoppingPanel.SetActive(true);
-        shoppingPanel.GetComponent<ShoppingUI>().OpenPanel();
+        shoppingPanel.GetComponent<ShoppingUI>().OpenPanel(); // triggers BuildRows()
     }
 
     public void ShowUpgrades()
@@ -57,10 +59,18 @@ public class UIManager : MonoBehaviour
         closingSummaryPanel.GetComponent<ClosingSummaryUI>().Populate(store, results);
     }
 
+    // Update: no HideAll() call needed here - HandleHourTick already returns immediately
+    // after calling this, so no other panel could still be open at this point anyway.
+    public void ShowGameOver()
+    {
+        inGameUI.SetActive(false);
+        gameOverPanel.SetActive(true);
+    }
+
     public void CloseCurrentPanel()
     {
         HideAll();
-        inGameUI.SetActive(true);
+        inGameUI.SetActive(true); // bring the HUD buttons back once a panel is dismissed
     }
 
     public void ShowTutorialMessage(string message)

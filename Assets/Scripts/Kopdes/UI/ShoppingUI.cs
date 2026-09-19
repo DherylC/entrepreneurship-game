@@ -28,7 +28,7 @@ public class ShoppingUI : MonoBehaviour
             // decides whether to show it as interactive or Locked based on currentDay.
             var rowObj = Instantiate(rowPrefab, rowContainer);
             var row = rowObj.GetComponent<RestockRowUI>();
-            row.Initialize(item, dayManager.config, RecalculateTotal, dayManager.currentDay);
+            row.Initialize(item, dayManager.config, dayManager.store, RecalculateTotal, dayManager.currentDay);
             activeRows.Add(row);
         }
 
@@ -43,12 +43,15 @@ public class ShoppingUI : MonoBehaviour
         totalCostText.text = total.ToString("F0");
     }
 
+    // Update: now checks closing hour (defensive - Shopping should normally only be reachable
+    // via the closing recap flow anyway, but this guards against any future path that opens it
+    // early) and relies on PlaceOrder's own cash check instead of duplicating that math here.
     public void ConfirmOrder()
     {
         if (dayManager.clock.currentHour < dayManager.config.closeHour)
         {
             Debug.Log("Can't restock yet - store is still open.");
-            return;
+            return; // TODO: show a real on-screen message instead of just a log
         }
 
         var order = new Dictionary<ItemData, int>();
@@ -57,7 +60,7 @@ public class ShoppingUI : MonoBehaviour
 
         if (order.Count == 0)
         {
-            dayManager.AdvanceDay(); // nothing ordered, just proceed like a skip
+            dayManager.AdvanceDay(); // nothing ordered - proceed like a skip
             return;
         }
 
@@ -65,7 +68,7 @@ public class ShoppingUI : MonoBehaviour
         if (!success)
         {
             Debug.Log("Not enough cash for this order.");
-            return; // TODO: show a real on-screen "insufficient funds" message instead of just a log
+            return; // TODO: show a real on-screen "insufficient funds" message
         }
 
         dayManager.AdvanceDay();

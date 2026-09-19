@@ -20,6 +20,7 @@ public class DayManager : MonoBehaviour
     DayResults results;
     bool gameStarted;
     bool weatherNotified;
+    bool isGameOver; // Update: true once the complaint threshold is hit - freezes the day loop entirely
 
     Transform theftSpawnPoint;
     Transform theftExitPoint;
@@ -47,8 +48,12 @@ public class DayManager : MonoBehaviour
         theftExitPoint = theftExit;
         store.baseCustomersToday = Mathf.RoundToInt(config.baseCustomersPerDay); // Day 1 starting point - grows from here each day
 
+        // Update: Day 1 now starts with real stock (clamped to the capacity cap) instead of
+        // empty shelves - previously every item started at 0, meaning zero sales were possible
+        // until the first restock arrived the next morning.
+        int day1Stock = Mathf.Min(config.day1StartingStockPerItem, store.upgrades.MaxStockPerItem(config));
         foreach (var item in allItems)
-            store.currentStock[item] = 0; // every item starts empty until the player's first restock
+            store.currentStock[item] = day1Stock;
 
         BeginDay();
         tutorialManager.TryAdvance(TutorialTrigger.OnGameStart);
@@ -59,7 +64,13 @@ public class DayManager : MonoBehaviour
         EconomyManager.ResolveDelivery(store, config);
         results = new DayResults();
         clock.ResetForNewDay();
-        notificationUI.HideAll();
+
+        // Update: defensive null-check - a missing NotificationUI reference used to crash this
+        // entire method (and everything calling it, including GameplaySceneBootstrapper.Start()),
+        // silently aborting the camera-snap and everything else that runs after StartGame().
+        if (notificationUI != null) notificationUI.HideAll();
+        else Debug.LogWarning("DayManager's Notification UI field isn't wired - weather/theft banners won't show.");
+
         weatherNotified = false;
 
         // Update: random events (weather + theft) are gated to Day 2 onward - Day 1 always stays calm.
@@ -77,12 +88,12 @@ public class DayManager : MonoBehaviour
 
     void HandleHourTick(int hour)
     {
-        if (!gameStarted) return; // ignore ticks before a store actually exists
+        if (!gameStarted || isGameOver) return; // ignore ticks before a store exists, or after the game has ended
 
         // Update: fire the weather notification exactly once, the hour it actually starts affecting traffic.
         if (results.triggeredEvent != null && !weatherNotified && hour >= results.eventTriggerHour)
         {
-            notificationUI.ShowWeatherBanner(results.triggeredEvent);
+            if (notificationUI != null) notificationUI.ShowWeatherBanner(results.triggeredEvent);
             weatherNotified = true;
         }
 
@@ -98,17 +109,35 @@ public class DayManager : MonoBehaviour
 
         EconomyManager.ResolveHourOfSales(store, results, customersThisHour, config, currentDay);
 
+        // Update: losing condition - checked immediately after this hour's complaints are tallied,
+        // rather than waiting for closing time, so hitting the threshold feels like an immediate
+        // consequence instead of something you only find out about at the end of the day.
+        if (results.complaints >= config.maxComplaintsPerDay)
+        {
+            TriggerGameOver();
+            return; // day ends here - skip spawning customers and the closeHour check below
+        }
+
         int visualCount = Mathf.Min(customersThisHour, config.maxVisibleCustomersPerHour);
         customerSpawner.SpawnForHour(visualCount);
 
         if (hour >= config.closeHour) EndDay();
     }
 
+    // Update: freezes the clock and shows the "Store Closed" screen - the game does not
+    // resume from this state, matching a permanent loss condition rather than a warning.
+    void TriggerGameOver()
+    {
+        isGameOver = true;
+        clock.speedMultiplier = 0f;
+        uiManager.ShowGameOver();
+    }
+
     // Update: shows the "THEFT!" notification and actually instantiates the Thief prefab at the
     // store's spawn/exit points - previously theft only existed as a silent bool with no in-scene presence.
     void TriggerTheft()
     {
-        notificationUI.ShowTheftBanner();
+        if (notificationUI != null) notificationUI.ShowTheftBanner();
 
         if (thiefPrefab != null && theftSpawnPoint != null && theftExitPoint != null)
         {
@@ -144,6 +173,7 @@ public class DayManager : MonoBehaviour
             Debug.LogError("AdvanceDay() called before StartGame() ran - the store was never placed. Restart from MapPlacement.");
             return;
         }
+        if (isGameOver) return; // Update: game has already ended - nothing should be able to advance past this
         currentDay++;
         store.baseCustomersToday += Random.Range(5, 11); // Random.Range(int,int) max is EXCLUSIVE, so this gives 5-10 inclusive
         BeginDay();
@@ -154,7 +184,7 @@ public class DayManager : MonoBehaviour
     {
         results.theftCaught = caught;
         results.theftResolved = true;
-        notificationUI.HideTheftBanner();
+        if (notificationUI != null) notificationUI.HideTheftBanner();
 
         if (!caught)
         {
@@ -164,5 +194,10 @@ public class DayManager : MonoBehaviour
                 store.currentStock[item] -= loss;
             }
         }
+    }
+
+    public bool CurrentDayHasRainEvent()
+    {
+        return results != null && results.triggeredEvent != null && results.triggeredEvent.isRainType;
     }
 }

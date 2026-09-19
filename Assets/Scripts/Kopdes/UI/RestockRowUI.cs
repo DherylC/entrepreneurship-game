@@ -1,6 +1,7 @@
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class RestockRowUI : MonoBehaviour
 {
@@ -13,14 +14,16 @@ public class RestockRowUI : MonoBehaviour
     ItemData item;
     int quantity;
     GameBalanceConfig config;
+    StoreState store; // Update: needed to compute remaining capacity headroom for the clamp below
     System.Action onChanged; // lets ShoppingUI recalc the total whenever any row changes
     bool isLocked;
 
-    // currentDay is now required - this row shows even for locked items, just non-interactive
-    public void Initialize(ItemData itemData, GameBalanceConfig cfg, System.Action onChangedCallback, int currentDay)
+    // Update: now takes the StoreState too, so quantity can be clamped against the capacity cap.
+    public void Initialize(ItemData itemData, GameBalanceConfig cfg, StoreState storeState, System.Action onChangedCallback, int currentDay)
     {
         item = itemData;
         config = cfg;
+        store = storeState;
         onChanged = onChangedCallback;
         quantity = 0;
         isLocked = item.unlockOnDay > currentDay;
@@ -47,12 +50,21 @@ public class RestockRowUI : MonoBehaviour
         Refresh();
     }
 
+    // Update: how much MORE of this item can actually be ordered - the cap is on TOTAL stock,
+    // not on the order alone, so this is (capacity - whatever's already sitting on the shelf).
+    int MaxOrderableQuantity()
+    {
+        int cap = store.upgrades.MaxStockPerItem(config);
+        int current = store.currentStock.GetValueOrDefault(item);
+        return Mathf.Max(0, cap - current);
+    }
+
+    // Update: quantity now clamps to MaxOrderableQuantity() instead of just a 0 floor - any
+    // attempt to go over the cap (via + button or typing) snaps straight down to the max allowed.
     void ChangeQuantity(int delta)
     {
         if (isLocked) return; // extra safety - buttons are already disabled, but guards direct calls too
-        quantity = Mathf.Max(0, quantity + delta);
-        // TODO: also clamp against store.upgrades.MaxStockPerItem(config) if you want the
-        // buttons to respect the capacity cap - currently uncapped on both button and typed input.
+        quantity = Mathf.Clamp(quantity + delta, 0, MaxOrderableQuantity());
         Refresh();
         onChanged?.Invoke();
     }
@@ -63,7 +75,7 @@ public class RestockRowUI : MonoBehaviour
         if (!int.TryParse(typedValue, out int parsed))
             parsed = 0; // empty or invalid input falls back to 0 instead of crashing
 
-        quantity = Mathf.Max(0, parsed);
+        quantity = Mathf.Clamp(parsed, 0, MaxOrderableQuantity());
         Refresh();
         onChanged?.Invoke();
     }

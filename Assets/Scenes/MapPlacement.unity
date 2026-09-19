@@ -1003,15 +1003,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 357b40f754c5ade40b65e8481ddd92e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapCameraController
+  focusPoint: {fileID: 1700407889}
+  defaultHeight: 25
+  defaultDistanceBack: 20
+  yaw: 0
+  pitch: 0
   moveSpeed: 20
   fastMoveMultiplier: 2
   referenceHeight: 20
   minHeightSpeedMultiplier: 0.3
   maxHeightSpeedMultiplier: 5
-  lookSensitivity: 3
-  minPitch: -80
-  maxPitch: 80
+  dragPanSpeed: 1
   zoomSpeed: 10
+  terrain: {fileID: 289417818}
+  boundaryMargin: 5
 --- !u!1 &1015947105
 GameObject:
   m_ObjectHideFlags: 0

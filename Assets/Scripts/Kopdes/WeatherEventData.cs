@@ -8,4 +8,6 @@ public class WeatherEventData : ScriptableObject
     public float chanceWeight = 0f;      // for weighted random selection among tiers
     public int earliestTriggerHour = 8;
     public int latestTriggerHour = 12;   // must stay before noon
+
+    public bool isRainType = true; // controls whether LightingManager applies the gloomy override for this event - default true since all 4 current tiers (Light Rain/Rain/Heavy Rain/Storming) are rain variants
 }

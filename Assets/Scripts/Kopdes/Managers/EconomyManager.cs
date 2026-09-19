@@ -25,6 +25,7 @@ public static class EconomyManager
         if (store.cash < totalCost) return false; // balance only ever gets touched below this line
 
         store.cash -= totalCost;
+        CashEvents.Raise(-totalCost);
         store.queuedOrder = new PendingOrder { items = orderedItems };
         return true;
     }
@@ -54,6 +55,7 @@ public static class EconomyManager
                 float roll = Random.Range(config.minSellMultiplier, config.maxSellMultiplier);
                 float salePrice = item.baseSellPrice * roll * paymentBonus;
                 store.cash += salePrice;
+                CashEvents.Raise(salePrice);
                 results.revenue += salePrice;
                 results.itemsSold[item] = results.itemsSold.GetValueOrDefault(item) + 1;
             }
