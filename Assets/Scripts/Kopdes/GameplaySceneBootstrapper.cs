@@ -5,6 +5,7 @@ public class GameplaySceneBootstrapper : MonoBehaviour
     public GameObject storePrefab;
     public Terrain terrain; // MUST use the same TerrainData asset as MapPlacement's terrain
     public DayManager dayManager;
+    public GameplayCameraController gameplayCamera; // Update: snaps to the store once it's placed
 
     void Awake()
     {
@@ -38,5 +39,14 @@ public class GameplaySceneBootstrapper : MonoBehaviour
             Debug.LogWarning("StorePrefab is missing a ThiefSpawnPoint/ThiefExitPoint child - theft events won't be able to spawn a Thief.");
 
         dayManager.StartGame(GameSessionData.ChosenLot, GameSessionData.ChosenLotData, spawner, theftSpawn, theftExit);
+
+        // Update: snap the aerial gameplay camera to the store the moment it's instantiated,
+        // so the player starts looking at their actual placed store, not wherever the camera
+        // happened to be left in the scene by default.
+        if (gameplayCamera != null)
+        {
+            gameplayCamera.storeTransform = storeInstance.transform;
+            gameplayCamera.SnapToStore();
+        }
     }
 }

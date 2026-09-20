@@ -1538,6 +1538,7 @@ MonoBehaviour:
   storePrefab: {fileID: 6498063370218345946, guid: 6160594fb3a136c48a861a0743a5540d, type: 3}
   terrain: {fileID: 947101027}
   dayManager: {fileID: 266441163}
+  gameplayCamera: {fileID: 961739754}
 --- !u!114 &266441162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5908,16 +5909,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameplayCameraController
   storeTransform: {fileID: 0}
-  fixedHeight: 30
+  heightAboveStore: 15
   lookAngle: 50
-  defaultDistanceBack: 15
   moveSpeed: 20
   fastMoveMultiplier: 2
   referenceOrthoSize: 10
   minZoomSpeedMultiplier: 0.3
   maxZoomSpeedMultiplier: 5
   panSpeed: 1
-  cam: {fileID: 961739752}
+  cam: {fileID: 0}
   zoomSpeed: 5
   minOrthoSize: 5
   maxOrthoSize: 40
@@ -7055,6 +7055,7 @@ MonoBehaviour:
   storePrefab: {fileID: 6498063370218345946, guid: 6160594fb3a136c48a861a0743a5540d, type: 3}
   terrain: {fileID: 947101027}
   dayManager: {fileID: 266441163}
+  gameplayCamera: {fileID: 961739754}
 --- !u!4 &1176165545
 Transform:
   m_ObjectHideFlags: 0
