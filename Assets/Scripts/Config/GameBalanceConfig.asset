@@ -13,28 +13,30 @@ MonoBehaviour:
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: Assembly-CSharp::GameBalanceConfig
   startingCash: 50000
+  day1StartingStockPerItem: 30
   openHour: 8
   closeHour: 20
-  realSecondsPerDay: 210
+  realSecondsPerDay: 150
   flatDeliveryFee: 20000
-  baseCustomersPerDay: 48
+  baseCustomersPerDay: 24
   maxVisibleCustomersPerHour: 8
-  minSellMultiplier: 0.5
-  maxSellMultiplier: 3
+  minSellMultiplier: 0.3
+  maxSellMultiplier: 1.8
   maxUpgradeLevel: 20
   capacityCurve:
     baseCost: 20000
-    growthRate: 1.15
+    growthRate: 1.5
     baseEffect: 30
     effectPerLevel: 20
   decorCurve:
     baseCost: 15000
-    growthRate: 1.1
+    growthRate: 1.7
     baseEffect: 1
     effectPerLevel: 0.2
   facilityCurve:
     baseCost: 25000
-    growthRate: 1.1
+    growthRate: 1.6
     baseEffect: 1
     effectPerLevel: 0.2
   theftBaseDailyChance: 0.5
+  maxComplaintsPerDay: 50
