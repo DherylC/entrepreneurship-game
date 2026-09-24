@@ -1,6 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Collections;
 
 public class DayManager : MonoBehaviour
 {
@@ -87,9 +87,9 @@ public class DayManager : MonoBehaviour
         }
     }
 
-    // Update: no longer resolves sales directly - now just handles the once-per-hour checks
-    // (weather/theft notifications) and kicks off a coroutine that spreads this hour's customers
-    // across the actual real-time duration of the hour, instead of resolving them all at once.
+    // Update: no longer resolves every hour's sales the same way. The CLOSING tick (hour >=
+    // closeHour) now resolves instantly, same as before the gradual rewrite - only REGULAR open
+    // hours get spread across real time via the coroutine below.
     void HandleHourTick(int hour)
     {
         if (!gameStarted || isGameOver) return; // ignore ticks before a store exists, or after the game has ended
@@ -111,20 +111,35 @@ public class DayManager : MonoBehaviour
         int totalOpenHours = config.closeHour - config.openHour;
         int customersThisHour = EconomyManager.CustomersForHour(store, currentLotData, config, multiplier, totalOpenHours);
 
+        // Update: BUG FIX - the closing tick used to also go through the gradual coroutine,
+        // which meant EndDay() (and the closing screen) didn't actually fire until ~17 real
+        // seconds AFTER the clock's displayed time had already frozen at closeHour - during
+        // that gap, sales kept resolving and the game visibly "kept running" with a stopped
+        // clock. Resolving this specific tick instantly, exactly like before the gradual
+        // rewrite, keeps "clock freezes" and "day actually ends" perfectly in sync again.
+        if (hour >= config.closeHour)
+        {
+            EconomyManager.ResolveHourOfSales(store, results, customersThisHour, config, currentDay);
+
+            if (results.complaints >= config.maxComplaintsPerDay)
+            {
+                TriggerGameOver();
+                return;
+            }
+
+            EndDay();
+            return;
+        }
+
         StartCoroutine(ResolveHourGradually(customersThisHour, hour));
     }
 
-    // Update: NEW - spreads one hour's worth of customers evenly across however long that
-    // in-game hour actually takes in real time (accounting for the current clock speed), instead
-    // of resolving them all in a single instant burst. This is what makes cash/popups trickle in
-    // steadily rather than arriving in one lump sum once per hour.
+    // Update: simplified - no longer needs to check/call EndDay() at all, since the closing
+    // tick is now handled entirely by the instant path in HandleHourTick above. This coroutine
+    // only ever runs for regular open hours (hour < closeHour).
     IEnumerator ResolveHourGradually(int customerCount, int hour)
     {
-        if (customerCount <= 0)
-        {
-            if (hour >= config.closeHour) EndDay();
-            yield break;
-        }
+        if (customerCount <= 0) yield break; // nothing to spread out this hour
 
         // How many real seconds this in-game hour takes, at the clock's current speed -
         // snapshotted once at the start of the hour (a mid-hour speed change won't retroactively
@@ -157,8 +172,6 @@ public class DayManager : MonoBehaviour
 
             yield return new WaitForSeconds(delayBetweenCustomers);
         }
-
-        if (hour >= config.closeHour) EndDay();
     }
 
     // Update: freezes the clock and shows the "Store Closed" screen - the game does not
@@ -232,6 +245,12 @@ public class DayManager : MonoBehaviour
             }
         }
     }
+
+    // Update: baked directly into the class now - this was previously only given as a separate
+    // "add this to your file" instruction in the Lighting section (Section 11) and never actually
+    // included here, which is easy to miss. LightingManager calls this every frame to know
+    // whether today counts as a rain day, regardless of whether the event has actually triggered
+    // yet (the gloomy sky mood starts at morning, the traffic-reducing effect starts later).
     public bool CurrentDayHasRainEvent()
     {
         return results != null && results.triggeredEvent != null && results.triggeredEvent.isRainType;

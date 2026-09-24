@@ -16,12 +16,12 @@ MonoBehaviour:
   day1StartingStockPerItem: 30
   openHour: 8
   closeHour: 20
-  realSecondsPerDay: 150
-  flatDeliveryFee: 20000
+  realSecondsPerDay: 60
+  flatDeliveryFee: 15000
   baseCustomersPerDay: 24
   maxVisibleCustomersPerHour: 8
   minSellMultiplier: 0.3
-  maxSellMultiplier: 1.8
+  maxSellMultiplier: 1.5
   maxUpgradeLevel: 20
   capacityCurve:
     baseCost: 20000
@@ -38,5 +38,5 @@ MonoBehaviour:
     growthRate: 1.6
     baseEffect: 1
     effectPerLevel: 0.2
-  theftBaseDailyChance: 0.5
+  theftBaseDailyChance: 1
   maxComplaintsPerDay: 50

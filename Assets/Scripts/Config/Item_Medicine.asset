@@ -15,4 +15,4 @@ MonoBehaviour:
   itemName: Medicine
   baseSellPrice: 16000
   flatRestockCost: 10000
-  unlockOnDay: 3
+  unlockOnDay: 4

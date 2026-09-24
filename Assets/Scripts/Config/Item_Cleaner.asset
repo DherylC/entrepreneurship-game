@@ -15,4 +15,4 @@ MonoBehaviour:
   itemName: Cleaner
   baseSellPrice: 24000
   flatRestockCost: 18000
-  unlockOnDay: 5
+  unlockOnDay: 6

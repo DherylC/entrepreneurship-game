@@ -15,4 +15,4 @@ MonoBehaviour:
   itemName: Snack
   baseSellPrice: 5000
   flatRestockCost: 3500
-  unlockOnDay: 2
+  unlockOnDay: 3

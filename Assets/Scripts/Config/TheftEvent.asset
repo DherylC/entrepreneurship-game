@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d501f0fbf9f8584f984cc1fc95f35e5, type: 3}
   m_Name: TheftEvent
   m_EditorClassIdentifier: Assembly-CSharp::TheftEventData
-  dailyChance: 0.5
-  itemsLostIfEscaped: 5
+  dailyChance: 1
+  itemsLostIfEscaped: 8
+  earliestTriggerHour: 10
+  latestTriggerHour: 16
