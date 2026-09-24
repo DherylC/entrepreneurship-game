@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
 
 public class DayManager : MonoBehaviour
 {
@@ -86,6 +87,9 @@ public class DayManager : MonoBehaviour
         }
     }
 
+    // Update: no longer resolves sales directly - now just handles the once-per-hour checks
+    // (weather/theft notifications) and kicks off a coroutine that spreads this hour's customers
+    // across the actual real-time duration of the hour, instead of resolving them all at once.
     void HandleHourTick(int hour)
     {
         if (!gameStarted || isGameOver) return; // ignore ticks before a store exists, or after the game has ended
@@ -107,19 +111,52 @@ public class DayManager : MonoBehaviour
         int totalOpenHours = config.closeHour - config.openHour;
         int customersThisHour = EconomyManager.CustomersForHour(store, currentLotData, config, multiplier, totalOpenHours);
 
-        EconomyManager.ResolveHourOfSales(store, results, customersThisHour, config, currentDay);
+        StartCoroutine(ResolveHourGradually(customersThisHour, hour));
+    }
 
-        // Update: losing condition - checked immediately after this hour's complaints are tallied,
-        // rather than waiting for closing time, so hitting the threshold feels like an immediate
-        // consequence instead of something you only find out about at the end of the day.
-        if (results.complaints >= config.maxComplaintsPerDay)
+    // Update: NEW - spreads one hour's worth of customers evenly across however long that
+    // in-game hour actually takes in real time (accounting for the current clock speed), instead
+    // of resolving them all in a single instant burst. This is what makes cash/popups trickle in
+    // steadily rather than arriving in one lump sum once per hour.
+    IEnumerator ResolveHourGradually(int customerCount, int hour)
+    {
+        if (customerCount <= 0)
         {
-            TriggerGameOver();
-            return; // day ends here - skip spawning customers and the closeHour check below
+            if (hour >= config.closeHour) EndDay();
+            yield break;
         }
 
-        int visualCount = Mathf.Min(customersThisHour, config.maxVisibleCustomersPerHour);
-        customerSpawner.SpawnForHour(visualCount);
+        // How many real seconds this in-game hour takes, at the clock's current speed -
+        // snapshotted once at the start of the hour (a mid-hour speed change won't retroactively
+        // reflow the remaining delay, which is an acceptable simplification here).
+        float realSecondsThisHour = 60f / (clock.MinutesPerRealSecond * Mathf.Max(clock.speedMultiplier, 0.0001f));
+        float delayBetweenCustomers = realSecondsThisHour / customerCount;
+
+        int maxVisual = config.maxVisibleCustomersPerHour;
+        int visualsSpawnedSoFar = 0;
+
+        for (int i = 0; i < customerCount; i++)
+        {
+            EconomyManager.ResolveSingleCustomer(store, results, config, currentDay);
+
+            // Spread the (capped) visible customer spawns proportionally across the same
+            // real-time window, instead of spawning all of them in one instant burst either.
+            if (visualsSpawnedSoFar < maxVisual && (i * maxVisual / customerCount) >= visualsSpawnedSoFar)
+            {
+                customerSpawner.SpawnForHour(1);
+                visualsSpawnedSoFar++;
+            }
+
+            // Update: losing condition - checked after EVERY customer now, not just once at the
+            // end of the hour, so hitting the threshold stops things immediately, mid-hour.
+            if (results.complaints >= config.maxComplaintsPerDay)
+            {
+                TriggerGameOver();
+                yield break;
+            }
+
+            yield return new WaitForSeconds(delayBetweenCustomers);
+        }
 
         if (hour >= config.closeHour) EndDay();
     }
@@ -195,7 +232,6 @@ public class DayManager : MonoBehaviour
             }
         }
     }
-
     public bool CurrentDayHasRainEvent()
     {
         return results != null && results.triggeredEvent != null && results.triggeredEvent.isRainType;

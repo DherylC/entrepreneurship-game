@@ -10,7 +10,10 @@ public class GameClock : MonoBehaviour
     public event System.Action<int> OnHourTick;
 
     float accumulatedMinutes;
-    float MinutesPerRealSecond => (config.closeHour - config.openHour) * 60f / config.realSecondsPerDay;
+    // Update: made public - DayManager needs this to know how long one in-game hour actually
+    // takes in real time, so it can spread that hour's sales evenly across it instead of
+    // resolving them all in one instant burst.
+    public float MinutesPerRealSecond => (config.closeHour - config.openHour) * 60f / config.realSecondsPerDay;
 
     void Update()
     {

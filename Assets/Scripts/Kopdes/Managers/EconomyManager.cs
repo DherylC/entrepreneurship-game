@@ -16,53 +16,66 @@ public static class EconomyManager
         store.queuedOrder = null;
     }
 
-    public static bool PlaceOrder(StoreState store, Dictionary<ItemData, int> orderedItems, GameBalanceConfig config)
+    // Update: now returns bool and only deducts cash if the order is actually affordable -
+    // previously this deducted unconditionally and trusted the caller to have already checked,
+    // which was a real gap (nothing stopped cash from going negative if a caller skipped the check).
+    public static bool PlaceOrder(StoreState store, System.Collections.Generic.Dictionary<ItemData, int> orderedItems, GameBalanceConfig config)
     {
         float itemCost = 0f;
         foreach (var kvp in orderedItems) itemCost += kvp.Key.flatRestockCost * kvp.Value;
         float totalCost = itemCost + config.flatDeliveryFee;
 
-        if (store.cash < totalCost) return false; // balance only ever gets touched below this line
+        if (store.cash < totalCost) return false; // balance is never touched below this line
 
         store.cash -= totalCost;
-        CashEvents.Raise(-totalCost);
         store.queuedOrder = new PendingOrder { items = orderedItems };
         return true;
     }
 
+    // Update: now uses store.baseCustomersToday (grows day over day) instead of the static
+    // config.baseCustomersPerDay - the config value is now only the DAY 1 starting point.
     public static int CustomersForHour(StoreState store, LotData lotData, GameBalanceConfig config, float eventMultiplierThisHour, int totalOpenHours)
     {
         float locationTraffic = store.lot.GetTrafficMultiplier(lotData);
         float facilityBonus = store.upgrades.FacilityTrafficBonus(config);
-        float baseCustomersPerHour = (config.baseCustomersPerDay * locationTraffic * facilityBonus) / totalOpenHours;
+        float baseCustomersPerHour = (store.baseCustomersToday * locationTraffic * facilityBonus) / totalOpenHours;
         return Mathf.RoundToInt(baseCustomersPerHour * eventMultiplierThisHour);
     }
 
-    // FIXED: now takes currentDay so locked items (unlockOnDay in the future) are never picked/sold.
+    // Update: kept as a thin wrapper around ResolveSingleCustomer() below - still used by
+    // TestHarness.Test_SimulateOneHour for a quick instant-bulk debug check, but DayManager
+    // itself no longer calls this directly (see the gradual-resolution rewrite in Section 3).
     public static void ResolveHourOfSales(StoreState store, DayResults results, int customerCount, GameBalanceConfig config, int currentDay)
     {
-        results.totalCustomers += customerCount;
+        for (int i = 0; i < customerCount; i++)
+            ResolveSingleCustomer(store, results, config, currentDay);
+    }
+
+    // Update: extracted from the old ResolveHourOfSales loop body so DayManager can call this
+    // once per customer, spaced out over real time, instead of resolving a whole hour at once.
+    // Also folds in the CashEvents.Raise(salePrice) call from the Cash HUD section - one sale,
+    // one event, one popup.
+    public static void ResolveSingleCustomer(StoreState store, DayResults results, GameBalanceConfig config, int currentDay)
+    {
+        results.totalCustomers++;
         float paymentBonus = store.upgrades.PaymentBonusMultiplier(config);
 
-        for (int i = 0; i < customerCount; i++)
-        {
-            ItemData item = PickRandomItem(store, currentDay);
-            if (item == null) continue; // nothing unlocked/stocked yet - customer leaves empty-handed
+        ItemData item = PickRandomItem(store, currentDay);
+        if (item == null) return; // nothing unlocked/stocked yet - customer leaves empty-handed
 
-            if (store.currentStock[item] > 0)
-            {
-                store.currentStock[item]--;
-                float roll = Random.Range(config.minSellMultiplier, config.maxSellMultiplier);
-                float salePrice = item.baseSellPrice * roll * paymentBonus;
-                store.cash += salePrice;
-                CashEvents.Raise(salePrice);
-                results.revenue += salePrice;
-                results.itemsSold[item] = results.itemsSold.GetValueOrDefault(item) + 1;
-            }
-            else
-            {
-                results.complaints++;
-            }
+        if (store.currentStock[item] > 0)
+        {
+            store.currentStock[item]--;
+            float roll = Random.Range(config.minSellMultiplier, config.maxSellMultiplier);
+            float salePrice = item.baseSellPrice * roll * paymentBonus;
+            store.cash += salePrice;
+            CashEvents.Raise(salePrice);
+            results.revenue += salePrice;
+            results.itemsSold[item] = results.itemsSold.GetValueOrDefault(item) + 1;
+        }
+        else
+        {
+            results.complaints++;
         }
     }
 
