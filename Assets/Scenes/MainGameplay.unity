@@ -5899,7 +5899,7 @@ Terrain:
   m_GroupingID: 0
   m_RenderingLayerMask: 1
   m_AllowAutoConnect: 1
-  m_EnableHeightmapRayTracing: 1
+  m_EnableHeightmapRayTracing: 0
   m_EnableTreesAndDetailsRayTracing: 0
   m_EnableHeightmapLODFrustumCulling: 1
   m_TreeMotionVectorModeOverride: 3
@@ -9889,7 +9889,6 @@ GameObject:
   - component: {fileID: 1600942462}
   - component: {fileID: 1600942465}
   - component: {fileID: 1600942464}
-  - component: {fileID: 1600942463}
   m_Layer: 5
   m_Name: TheftBanner
   m_TagString: Untagged
@@ -9917,22 +9916,6 @@ RectTransform:
   m_AnchoredPosition: {x: 17.72351, y: 614.42}
   m_SizeDelta: {x: 971.0832, y: 57.2322}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1600942463
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1600942461}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f16e07e16e4ccc42ad183266ef2cf51, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CashHUD
-  dayManager: {fileID: 266441163}
-  cashText: {fileID: 2006742624}
-  popupPrefab: {fileID: 7099231131872598489, guid: b0b2aa25c704bfa49af4430b4af1d966, type: 3}
-  popupSpawnPoint: {fileID: 360355221}
 --- !u!114 &1600942464
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11847,7 +11830,6 @@ GameObject:
   - component: {fileID: 1883685564}
   - component: {fileID: 1883685567}
   - component: {fileID: 1883685566}
-  - component: {fileID: 1883685565}
   m_Layer: 5
   m_Name: WeatherBanner
   m_TagString: Untagged
@@ -11875,22 +11857,6 @@ RectTransform:
   m_AnchoredPosition: {x: 17.72351, y: 614.42}
   m_SizeDelta: {x: 971.0832, y: 57.2322}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1883685565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1883685563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f16e07e16e4ccc42ad183266ef2cf51, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CashHUD
-  dayManager: {fileID: 266441163}
-  cashText: {fileID: 1694267134}
-  popupPrefab: {fileID: 7099231131872598489, guid: b0b2aa25c704bfa49af4430b4af1d966, type: 3}
-  popupSpawnPoint: {fileID: 636195297}
 --- !u!114 &1883685566
 MonoBehaviour:
   m_ObjectHideFlags: 0

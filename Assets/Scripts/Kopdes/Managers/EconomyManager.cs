@@ -12,6 +12,7 @@ public static class EconomyManager
         {
             int cap = store.upgrades.MaxStockPerItem(config);
             store.currentStock[kvp.Key] = Mathf.Min(store.currentStock.GetValueOrDefault(kvp.Key) + kvp.Value, cap);
+            StockEvents.Raise();
         }
         store.queuedOrder = null;
     }
@@ -28,6 +29,7 @@ public static class EconomyManager
         if (store.cash < totalCost) return false; // balance is never touched below this line
 
         store.cash -= totalCost;
+        CashEvents.Raise(-totalCost);
         store.queuedOrder = new PendingOrder { items = orderedItems };
         return true;
     }
@@ -66,6 +68,7 @@ public static class EconomyManager
         if (store.currentStock[item] > 0)
         {
             store.currentStock[item]--;
+            StockEvents.Raise();
             float roll = Random.Range(config.minSellMultiplier, config.maxSellMultiplier);
             float salePrice = item.baseSellPrice * roll * paymentBonus;
             store.cash += salePrice;
