@@ -12,7 +12,6 @@ public static class EconomyManager
         {
             int cap = store.upgrades.MaxStockPerItem(config);
             store.currentStock[kvp.Key] = Mathf.Min(store.currentStock.GetValueOrDefault(kvp.Key) + kvp.Value, cap);
-            StockEvents.Raise();
         }
         store.queuedOrder = null;
     }
@@ -29,7 +28,6 @@ public static class EconomyManager
         if (store.cash < totalCost) return false; // balance is never touched below this line
 
         store.cash -= totalCost;
-        CashEvents.Raise(-totalCost);
         store.queuedOrder = new PendingOrder { items = orderedItems };
         return true;
     }
@@ -68,7 +66,18 @@ public static class EconomyManager
         if (store.currentStock[item] > 0)
         {
             store.currentStock[item]--;
+            int remaining = store.currentStock[item];
+
+            // Update: fires exactly once as stock crosses each threshold going down - since
+            // stock only ever decrements by 1 per sale, an exact equality check (not <=) means
+            // this never re-fires on every subsequent sale while already below the threshold.
+            if (remaining == 0)
+                NotificationEvents.Raise($"{item.itemName} is out of stock!");
+            else if (remaining == config.lowStockThreshold)
+                NotificationEvents.Raise($"{item.itemName} is running low - {remaining} left");
+
             StockEvents.Raise();
+
             float roll = Random.Range(config.minSellMultiplier, config.maxSellMultiplier);
             float salePrice = item.baseSellPrice * roll * paymentBonus;
             store.cash += salePrice;

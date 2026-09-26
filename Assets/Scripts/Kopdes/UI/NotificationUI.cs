@@ -1,34 +1,40 @@
 using UnityEngine;
-using TMPro;
+using System.Collections.Generic;
 
 public class NotificationUI : MonoBehaviour
 {
-    public GameObject weatherBannerRoot;
-    public TMP_Text weatherBannerText;
-    public GameObject theftBannerRoot;
-    public TMP_Text theftBannerText;
+    public Transform toastContainer; // has a Vertical Layout Group - this is what makes the stack re-flow automatically
+    public GameObject toastPrefab;
 
-    public void ShowWeatherBanner(WeatherEventData ev)
+    List<GameObject> activeToasts = new();
+
+    void OnEnable() => NotificationEvents.OnNotify += ShowNotification;
+    void OnDisable() => NotificationEvents.OnNotify -= ShowNotification;
+
+    public void ShowNotification(string message)
     {
-        weatherBannerRoot.SetActive(true);
-        weatherBannerText.text = $"{ev.eventName}, customers x{ev.trafficMultiplier:F1}";
+        var toastObj = Instantiate(toastPrefab, toastContainer);
+        toastObj.transform.SetSiblingIndex(0); // newest appears at the top of the stack
+        activeToasts.Add(toastObj);
+        toastObj.GetComponent<NotificationToastUI>().Show(message, () => activeToasts.Remove(toastObj));
     }
 
-    public void HideWeatherBanner() => weatherBannerRoot.SetActive(false);
+    // Kept with their old names so DayManager's existing ShowWeatherBanner()/ShowTheftBanner()
+    // calls don't need to change - both just route into the same toast system now.
+    public void ShowWeatherBanner(WeatherEventData ev) => ShowNotification($"{ev.eventName}! Customers x{ev.trafficMultiplier:F1}");
+    public void ShowTheftBanner() => ShowNotification("THEFT! Go to First Person and catch the thief!");
 
-    public void ShowTheftBanner()
-    {
-        theftBannerRoot.SetActive(true);
-        theftBannerText.text = "THEFT! Go to First Person and catch the thief!";
-    }
+    // Update: toasts now auto-dismiss on their own timer, so there's nothing left to manually
+    // hide once shown - these are kept as no-ops purely so DayManager's existing calls to them
+    // (e.g. NotifyTheftResult's HideTheftBanner()) don't need to be removed or edited.
+    public void HideWeatherBanner() { }
+    public void HideTheftBanner() { }
 
-    public void HideTheftBanner() => theftBannerRoot.SetActive(false);
-
-    // Called once at the start of every new day (DayManager.BeginDay) to clear
-    // yesterday's banners before today's events get a chance to roll.
+    // Immediately clears every currently-visible toast - DayManager.BeginDay() still calls this
+    // at the start of each day as a hard reset, in case anything from yesterday is still animating.
     public void HideAll()
     {
-        HideWeatherBanner();
-        HideTheftBanner();
+        foreach (var toast in activeToasts) if (toast != null) Destroy(toast);
+        activeToasts.Clear();
     }
 }
