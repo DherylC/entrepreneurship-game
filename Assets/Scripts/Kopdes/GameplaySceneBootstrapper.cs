@@ -33,8 +33,8 @@ public class GameplaySceneBootstrapper : MonoBehaviour
 
         // Update: also find the store's theft spawn/exit points, same pattern as CustomerSpawner -
         // DayManager needs these to actually spawn the Thief when a theft event triggers.
-        Transform theftSpawn = storeInstance.transform.Find("ThiefSpawnPoint");
-        Transform theftExit = storeInstance.transform.Find("ThiefExitPoint");
+        Transform theftSpawn = storeInstance.transform.Find("theftSpawnPoint");
+        Transform theftExit = storeInstance.transform.Find("theftExitPoint");
         if (theftSpawn == null || theftExit == null)
             Debug.LogWarning("StorePrefab is missing a ThiefSpawnPoint/ThiefExitPoint child - theft events won't be able to spawn a Thief.");
 

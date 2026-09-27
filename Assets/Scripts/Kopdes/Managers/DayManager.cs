@@ -97,7 +97,7 @@ public class DayManager : MonoBehaviour
         // Update: fire the weather notification exactly once, the hour it actually starts affecting traffic.
         if (results.triggeredEvent != null && !weatherNotified && hour >= results.eventTriggerHour)
         {
-            if (notificationUI != null) notificationUI.ShowWeatherBanner(results.triggeredEvent);
+            NotificationEvents.Raise($"{results.triggeredEvent.eventName}! Customers x{results.triggeredEvent.trafficMultiplier:F1}");
             weatherNotified = true;
         }
 
@@ -187,7 +187,7 @@ public class DayManager : MonoBehaviour
     // store's spawn/exit points - previously theft only existed as a silent bool with no in-scene presence.
     void TriggerTheft()
     {
-        if (notificationUI != null) notificationUI.ShowTheftBanner();
+        NotificationEvents.Raise("THEFT! Go to First Person and catch the thief!");
 
         if (thiefPrefab != null && theftSpawnPoint != null && theftExitPoint != null)
         {
@@ -234,7 +234,8 @@ public class DayManager : MonoBehaviour
     {
         results.theftCaught = caught;
         results.theftResolved = true;
-        if (notificationUI != null) notificationUI.HideTheftBanner();
+        // Update: HideTheftBanner() call removed entirely - toasts auto-dismiss on their own
+        // timer now, there's nothing left to manually hide when theft resolves.
 
         if (!caught)
         {

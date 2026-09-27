@@ -14,24 +14,23 @@ public class NotificationUI : MonoBehaviour
     public void ShowNotification(string message)
     {
         var toastObj = Instantiate(toastPrefab, toastContainer);
+        toastObj.SetActive(true); // defensive - guarantees the clone is active even if the prefab source ever ends up inactive
         toastObj.transform.SetSiblingIndex(0); // newest appears at the top of the stack
         activeToasts.Add(toastObj);
         toastObj.GetComponent<NotificationToastUI>().Show(message, () => activeToasts.Remove(toastObj));
     }
 
-    // Kept with their old names so DayManager's existing ShowWeatherBanner()/ShowTheftBanner()
-    // calls don't need to change - both just route into the same toast system now.
-    public void ShowWeatherBanner(WeatherEventData ev) => ShowNotification($"{ev.eventName}! Customers x{ev.trafficMultiplier:F1}");
-    public void ShowTheftBanner() => ShowNotification("THEFT! Go to First Person and catch the thief!");
-
-    // Update: toasts now auto-dismiss on their own timer, so there's nothing left to manually
-    // hide once shown - these are kept as no-ops purely so DayManager's existing calls to them
-    // (e.g. NotifyTheftResult's HideTheftBanner()) don't need to be removed or edited.
-    public void HideWeatherBanner() { }
-    public void HideTheftBanner() { }
+    // Update: ShowWeatherBanner/ShowTheftBanner/HideWeatherBanner/HideTheftBanner REMOVED.
+    // These used to be called directly through DayManager's own `notificationUI` field reference -
+    // a second pathway completely separate from NotificationEvents (which stock alerts already
+    // used). Two different ways to show a notification meant two different ways for wiring to
+    // silently break. DayManager now calls NotificationEvents.Raise(...) directly for weather/
+    // theft too, exactly like every other notification - one single pathway, no exceptions.
 
     // Immediately clears every currently-visible toast - DayManager.BeginDay() still calls this
     // at the start of each day as a hard reset, in case anything from yesterday is still animating.
+    // This is the ONE remaining place that still needs a direct object reference, since
+    // NotificationEvents is fire-and-forget with no natural "clear everything" signal.
     public void HideAll()
     {
         foreach (var toast in activeToasts) if (toast != null) Destroy(toast);

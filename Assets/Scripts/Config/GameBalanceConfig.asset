@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameBalanceConfig
   startingCash: 50000
   day1StartingStockPerItem: 30
+  lowStockThreshold: 5
   openHour: 8
   closeHour: 20
-  realSecondsPerDay: 60
+  realSecondsPerDay: 10
   flatDeliveryFee: 15000
   baseCustomersPerDay: 24
   maxVisibleCustomersPerHour: 8

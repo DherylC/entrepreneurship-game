@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3492375219595201313}
   m_Layer: 0
-  m_Name: ThiefExitPoint
+  m_Name: theftExitPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -234,7 +234,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8785537576069609587}
   m_Layer: 0
-  m_Name: ThiefSpawnPoint
+  m_Name: theftSpawnPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

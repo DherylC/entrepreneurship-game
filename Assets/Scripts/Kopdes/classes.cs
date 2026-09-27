@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class StoreState
 {
     public float cash;
@@ -11,6 +12,7 @@ public class StoreState
     public int baseCustomersToday; // grows by a random 5-10 each day, set initially in StartGame(), incremented in AdvanceDay()
 }
 
+[System.Serializable]
 public class StoreUpgrades
 {
     public int capacityLevel;
@@ -27,6 +29,7 @@ public class StoreUpgrades
         => 1f + (float)config.facilityCurve.EffectAtLevel(facilityLevel);
 }
 
+[System.Serializable]
 public class PendingOrder
 {
     public Dictionary<ItemData, int> items = new();
@@ -46,6 +49,7 @@ public class DayResults
     public bool theftCaught;
 }
 
+[System.Serializable]
 public class LotSite
 {
     public Vector2 position;

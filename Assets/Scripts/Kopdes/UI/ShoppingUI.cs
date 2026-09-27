@@ -9,6 +9,7 @@ public class ShoppingUI : MonoBehaviour
     public TMP_Text totalCostText;
     public DayManager dayManager;
 
+
     List<RestockRowUI> activeRows = new();
 
     public void OpenPanel()
@@ -51,6 +52,7 @@ public class ShoppingUI : MonoBehaviour
         if (dayManager.clock.currentHour < dayManager.config.closeHour)
         {
             Debug.Log("Can't restock yet - store is still open.");
+            NotificationEvents.Raise("Can only restock on closing hour");
             return; // TODO: show a real on-screen message instead of just a log
         }
 
@@ -68,6 +70,8 @@ public class ShoppingUI : MonoBehaviour
         if (!success)
         {
             Debug.Log("Not enough cash for this order.");
+            NotificationEvents.Raise("Insufficient Cash");
+
             return; // TODO: show a real on-screen "insufficient funds" message
         }
 
@@ -79,6 +83,8 @@ public class ShoppingUI : MonoBehaviour
         if (dayManager.clock.currentHour < dayManager.config.closeHour)
         {
             Debug.Log("Can't skip restock yet - store is still open.");
+            NotificationEvents.Raise("Cannot skip order, store is still open");
+
             return;
         }
 
