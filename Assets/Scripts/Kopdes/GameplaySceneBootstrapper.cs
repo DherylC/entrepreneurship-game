@@ -6,6 +6,7 @@ public class GameplaySceneBootstrapper : MonoBehaviour
     public Terrain terrain; // MUST use the same TerrainData asset as MapPlacement's terrain
     public DayManager dayManager;
     public GameplayCameraController gameplayCamera; // Update: snaps to the store once it's placed
+    public CameraModeManager cameraModeManager; // Update: handed the store's Guard once it's instantiated
 
     void Awake()
     {
@@ -39,6 +40,18 @@ public class GameplaySceneBootstrapper : MonoBehaviour
             Debug.LogWarning("StorePrefab is missing a ThiefSpawnPoint/ThiefExitPoint child - theft events won't be able to spawn a Thief.");
 
         dayManager.StartGame(GameSessionData.ChosenLot, GameSessionData.ChosenLotData, spawner, theftSpawn, theftExit);
+
+        // Update: find the Guard humanoid inside the store and hand it to the camera mode toggle.
+        var guard = storeInstance.GetComponentInChildren<FirstPersonController>(true);
+        if (guard != null)
+        {
+            guard.dayManager = dayManager;
+            if (cameraModeManager != null) cameraModeManager.guard = guard;
+        }
+        else
+        {
+            Debug.LogWarning("StorePrefab has no Guard (FirstPersonController) child - first person mode won't work.");
+        }
 
         // Update: snap the aerial gameplay camera to the store the moment it's instantiated,
         // so the player starts looking at their actual placed store, not wherever the camera

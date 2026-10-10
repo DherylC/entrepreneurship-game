@@ -35,6 +35,7 @@ public class GameBalanceConfig : ScriptableObject
 
     [Header("Losing Condition")]
     public int maxComplaintsPerDay = 10; // reaching this many complaints in one day ends the game
+    public int complaintsPerCustomerShot = 10; // Update: complaints added each time the player shoots a customer
 }
 
 [System.Serializable]

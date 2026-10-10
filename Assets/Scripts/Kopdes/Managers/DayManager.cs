@@ -238,13 +238,57 @@ public class DayManager : MonoBehaviour
         // timer now, there's nothing left to manually hide when theft resolves.
 
         if (!caught)
+            StealItems();
+    }
+
+    // Update: escape penalty. Removes a random total of min..max units, one unit at a time from a
+    // randomly chosen category that is unlocked today AND still has stock. This is what makes the loss
+    // land on a random subset of categories (it could hit just one, or all of them). Stops early if
+    // everything unlocked runs out. The old version took a flat amount from EVERY item, including
+    // ones not unlocked yet, and never refreshed the Inventory panel or told the player what was lost.
+    void StealItems()
+    {
+        var candidates = new System.Collections.Generic.List<ItemData>();
+        foreach (var item in allItems)
+            if (item.unlockOnDay <= currentDay && store.currentStock.GetValueOrDefault(item) > 0)
+                candidates.Add(item);
+
+        if (candidates.Count == 0) return;
+
+        int toSteal = Random.Range(theftEvent.minItemsLostIfEscaped, theftEvent.maxItemsLostIfEscaped + 1); // int max is EXCLUSIVE
+        var lost = new System.Collections.Generic.Dictionary<ItemData, int>();
+        int stolen = 0;
+
+        while (stolen < toSteal && candidates.Count > 0)
         {
-            foreach (var item in allItems)
-            {
-                int loss = Mathf.Min(store.currentStock.GetValueOrDefault(item), theftEvent.itemsLostIfEscaped);
-                store.currentStock[item] -= loss;
-            }
+            int i = Random.Range(0, candidates.Count);
+            ItemData pick = candidates[i];
+
+            store.currentStock[pick]--;
+            lost[pick] = lost.GetValueOrDefault(pick) + 1;
+            stolen++;
+
+            if (store.currentStock[pick] <= 0) candidates.RemoveAt(i); // emptied, can't steal more of it
         }
+
+        StockEvents.Raise(); // refresh the Inventory panel if it's open
+
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (var kv in lost) parts.Add($"{kv.Value} {kv.Key.itemName}");
+        NotificationEvents.Raise($"The thief escaped with {stolen} items ({string.Join(", ", parts)})!");
+    }
+
+    // Update: called by FirstPersonController when the player shoots a customer. Each shot adds
+    // config.complaintsPerCustomerShot complaints and uses the same game-over check as normal sales.
+    public void RegisterCustomerShot()
+    {
+        if (!gameStarted || isGameOver) return;
+
+        results.complaints += config.complaintsPerCustomerShot;
+        NotificationEvents.Raise("You shot a customer! Complaints are piling up.");
+
+        if (results.complaints >= config.maxComplaintsPerDay)
+            TriggerGameOver();
     }
 
     // Update: baked directly into the class now - this was previously only given as a separate

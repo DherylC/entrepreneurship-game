@@ -39,5 +39,6 @@ MonoBehaviour:
     growthRate: 1.6
     baseEffect: 1
     effectPerLevel: 0.2
-  theftBaseDailyChance: 1
-  maxComplaintsPerDay: 50
+  theftBaseDailyChance: 0.8
+  maxComplaintsPerDay: 30
+  complaintsPerCustomerShot: 30
