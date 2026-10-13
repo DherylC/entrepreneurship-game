@@ -7,7 +7,8 @@ public class CustomerSpawner : MonoBehaviour
     public GameObject customerPrefab;
     public Transform entryPoint;
     public Transform exitPoint;
-    public Transform[] shelfWaypoints;
+    public Transform[] shelfWaypoints; // Update: now only a fallback, used when no routes are assigned (or a route is empty)
+    public CustomerRoute[] routes;     // Update: each customer follows one of these at random
     public int poolSize = 10;
 
     Queue<GameObject> pool = new();
@@ -33,7 +34,12 @@ public class CustomerSpawner : MonoBehaviour
             var obj = pool.Dequeue();
             obj.SetActive(true);
             obj.transform.position = entryPoint.position;
-            StartCoroutine(obj.GetComponent<CustomerVisual>().DoVisit(this, entryPoint, RandomShelf(), exitPoint));
+
+            // Update: pick a predetermined route if any are assigned. The single shelf is only passed along as
+            // a fallback in case the chosen route turns out to be empty.
+            CustomerRoute route = (routes != null && routes.Length > 0) ? routes[Random.Range(0, routes.Length)] : null;
+            Transform fallbackShelf = (shelfWaypoints != null && shelfWaypoints.Length > 0) ? RandomShelf() : null;
+            StartCoroutine(obj.GetComponent<CustomerVisual>().DoVisit(this, entryPoint, route, fallbackShelf, exitPoint));
         }
     }
 

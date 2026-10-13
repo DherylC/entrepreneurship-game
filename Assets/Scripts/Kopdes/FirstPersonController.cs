@@ -8,6 +8,11 @@ public class FirstPersonController : MonoBehaviour
     public GameObject bodyModel;    // the humanoid mesh - hidden in first person
     public GameObject worldGun;     // gun in the humanoid's hand - visible in aerial view only
     public GameObject viewGun;      // gun that is a child of EyePoint - visible in first person only
+    public Animator animator;       // optional: found on bodyModel automatically if left empty (needs bool params isIdle + isWalking)
+    public float happyIdleInterval = 15f; // aerial view only: every N seconds the guard plays HappyIdle once, then returns to BreathingIdle
+
+    [Header("View model: the gun is drawn by a separate overlay camera so it never clips into walls or the near plane")]
+    public string viewModelLayerName = "ViewModel"; // add this layer in Project Settings > Tags and Layers
 
     [Header("Movement / look")]
     public float moveSpeed = 5f;
@@ -39,12 +44,15 @@ public class FirstPersonController : MonoBehaviour
     float nextFireTime;
     bool active;
     Vector3 viewGunRestPos;
+    float nextHappyTime;
 
     void Awake()
     {
         controller = GetComponent<CharacterController>();
         if (viewGun != null) viewGunRestPos = viewGun.transform.localPosition;
+        MoveViewGunToViewModelLayer();
         ApplyVisuals(false); // start in aerial-view state: body + hand gun visible
+        SetIdle();
     }
 
     // Called by CameraModeManager once the camera transition has finished.
@@ -64,6 +72,7 @@ public class FirstPersonController : MonoBehaviour
     {
         active = false;
         ApplyVisuals(false);
+        SetIdle(); // must come AFTER ApplyVisuals: the Model was inactive until that line
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -75,8 +84,44 @@ public class FirstPersonController : MonoBehaviour
         if (viewGun != null) viewGun.SetActive(firstPerson);
     }
 
+    // Puts the gun AND everything under it (muzzle flash included) on the ViewModel layer. The Main Camera
+    // culls that layer and the overlay camera renders only that layer, so the gun is drawn on top of the world.
+    void MoveViewGunToViewModelLayer()
+    {
+        if (viewGun == null) return;
+
+        int layer = LayerMask.NameToLayer(viewModelLayerName);
+        if (layer < 0)
+        {
+            Debug.LogWarning($"Layer '{viewModelLayerName}' doesn't exist - add it in Project Settings > Tags and Layers, or the gun will clip into walls.");
+            return;
+        }
+
+        foreach (Transform t in viewGun.GetComponentsInChildren<Transform>(true))
+            t.gameObject.layer = layer;
+    }
+
+    // Update: idle pose for the aerial view. Called AFTER the Model is re-activated, because an Animator on an
+    // inactive object can't take parameters, and re-enabling it restarts the controller at its default state.
+    void SetIdle()
+    {
+        nextHappyTime = Time.time + happyIdleInterval; // first HappyIdle comes one full interval after returning
+        if (animator == null && bodyModel != null) animator = bodyModel.GetComponentInChildren<Animator>(true);
+        if (animator == null) return;
+        animator.SetBool("isIdle", true);
+        animator.SetBool("isWalking", false);
+        animator.ResetTrigger("playHappy"); // clear any leftover trigger from before first person
+    }
+
     void Update()
     {
+        // Aerial view only: every happyIdleInterval seconds, trigger HappyIdle (it returns to BreathingIdle by itself).
+        if (!active && animator != null && Time.time >= nextHappyTime)
+        {
+            nextHappyTime = Time.time + happyIdleInterval;
+            animator.SetTrigger("playHappy");
+        }
+
         if (!active) return;
 
         // Movement
