@@ -3,6 +3,18 @@ using TMPro;
 
 public class UIManager : MonoBehaviour
 {
+    public static UIManager Instance { get; private set; }
+
+    public static bool IsModalOpen =>
+        Instance != null &&
+        (IsOpen(Instance.shoppingPanel) || IsOpen(Instance.upgradePanel) || IsOpen(Instance.inventoryPanel) ||
+         IsOpen(Instance.closingSummaryPanel) || IsOpen(Instance.gameOverPanel));
+
+    static bool IsOpen(GameObject panel) => panel != null && panel.activeSelf;
+
+    void Awake() => Instance = this;
+    void OnDestroy() { if (Instance == this) Instance = null; }
+
     public GameObject shoppingPanel, upgradePanel, inventoryPanel, closingSummaryPanel, tutorialBanner;
     public GameObject inGameUI; // parent object holding the Shop/Inventory/Upgrade HUD buttons
     public GameObject gameOverPanel; // Update: the "Store Closed" screen

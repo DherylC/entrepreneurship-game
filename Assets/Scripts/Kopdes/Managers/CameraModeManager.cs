@@ -22,6 +22,10 @@ public class CameraModeManager : MonoBehaviour
 
     public bool IsFirstPerson { get; private set; }
 
+    // Update: true from the START of the fly-in to first person until the START of the fly-out, so the
+    // building (see BuildingCutaway) is fully visible the whole time the camera is inside or heading inside.
+    public bool ShowFullBuilding { get; private set; }
+
     bool transitioning;
     Vector3 savedPosition;
     Quaternion savedRotation;
@@ -37,6 +41,15 @@ public class CameraModeManager : MonoBehaviour
 
     void Update()
     {
+        // Update: a panel can pop up while you're in first person (the closing summary at closing time, or
+        // game over). The cursor is locked there, so nothing could be clicked - pull the player back to the
+        // aerial view so they're never stuck. No E-toggle while a panel is open either.
+        if (UIManager.IsModalOpen)
+        {
+            if (IsFirstPerson && !transitioning && guard != null) StartCoroutine(GoToAerial());
+            return;
+        }
+
         if (!Input.GetKeyDown(toggleKey)) return;
 
         // Don't toggle while typing into a text field (the shop quantity box).
@@ -49,7 +62,7 @@ public class CameraModeManager : MonoBehaviour
     // Wire a UI Button's OnClick() to this as well.
     public void Toggle()
     {
-        if (transitioning) return;
+        if (transitioning || UIManager.IsModalOpen) return;
         if (guard == null)
         {
             Debug.LogWarning("CameraModeManager has no guard - is a FirstPersonController inside the StorePrefab?");
@@ -61,6 +74,7 @@ public class CameraModeManager : MonoBehaviour
     IEnumerator GoToFirstPerson()
     {
         transitioning = true;
+        ShowFullBuilding = true;
 
         // Save the free-cam state exactly as it is right now.
         savedPosition = cam.transform.position;
@@ -106,6 +120,7 @@ public class CameraModeManager : MonoBehaviour
     IEnumerator GoToAerial()
     {
         transitioning = true;
+        ShowFullBuilding = false; // the walls/roof start fading back out as the camera climbs out
 
         guard.Exit(); // unlocks the cursor, shows the body again so the pull-back is visible
         SetHiddenUI(false);

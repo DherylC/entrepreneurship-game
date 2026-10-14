@@ -5,4 +5,10 @@ public static class GameSessionData
 {
     public static LotSite ChosenLot;
     public static LotData ChosenLotData;
+
+    public static void ResetAll()
+    {
+        ChosenLot = null;
+        ChosenLotData = null;
+    }
 }

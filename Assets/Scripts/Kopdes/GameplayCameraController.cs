@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class GameplayCameraController : MonoBehaviour
 {
@@ -31,21 +32,29 @@ public class GameplayCameraController : MonoBehaviour
     public float minZoomSpeedMultiplier = 0.3f;
     public float maxZoomSpeedMultiplier = 5f;
 
-    [Header("Pan (hold left OR right mouse button + drag)")]
-    public float panSpeed = 1f;
+    [Header("Drag-pan (hold left OR right mouse button) - the ground point you grab stays exactly under the cursor")]
+    [Tooltip("Ignore drags that START over UI (buttons, panels). Turn this off if panning stops working - a full-screen UI Image with Raycast Target on would block every drag.")]
+    public bool blockDragOverUI = true;
 
     [Header("Zoom (scroll wheel) - raises height + steepens angle, does NOT resize the orthographic frustum")]
     public Camera cam;
     public float zoomSpeed = 0.5f; // how much zoomLevel (0-1) shifts per scroll tick - default gives ~20 notches for the full range
 
-    float zoomLevel = 0f; // 0 = fully zoomed in, 1 = fully zoomed out
+    [Header("Projection")]
+    public bool useOrthographic = false; // Update: false = normal 3D perspective (default). true = the old orthographic look.
 
-    Vector3 lastMousePosition;
+    float zoomLevel = 0f; // 0 = fully zoomed in, 1 = fully zoomed out
+    public float ZoomLevel => zoomLevel; // Update: read-only, used by BuildingCutaway to hide the walls/roof when zoomed in
+
+    // Drag-pan state
+    bool isDragging;
+    Plane dragPlane;     // horizontal plane through the grabbed ground point
+    Vector3 dragAnchor;  // the world point that was under the cursor when the drag started
 
     void Start()
     {
         if (cam == null) cam = GetComponent<Camera>();
-        cam.orthographic = false;
+        cam.orthographic = useOrthographic; // Update: was hard-coded to true, which forced orthographic every time
 
         zoomLevel = 0f; // start fully zoomed in
         if (storeTransform != null) SnapToStore();
@@ -72,6 +81,14 @@ public class GameplayCameraController : MonoBehaviour
 
     void Update()
     {
+        // Update: while any panel is open (shop, inventory, upgrades, closing summary, game over) the world
+        // gets no input at all - no WASD, no drag, no scroll zoom. A drag already in progress is cancelled.
+        if (UIManager.IsModalOpen)
+        {
+            isDragging = false;
+            return;
+        }
+
         HandleMovement();
         HandlePan();
         HandleZoom();
@@ -116,28 +133,53 @@ public class GameplayCameraController : MonoBehaviour
         transform.position += move;
     }
 
+    // Update: full rewrite - grab-the-ground dragging. The old version moved the camera by (mouse delta x a speed),
+    // which can never match the cursor exactly because how far the ground moves per pixel changes with height,
+    // tilt and distance. Now: on press, remember the exact GROUND POINT under the cursor. Every frame while held,
+    // cast the cursor onto the same horizontal plane and slide the camera by the gap between that point and the
+    // grabbed one - so the grabbed point is always under the cursor until release. Height is never touched.
     void HandlePan()
     {
-        // Update: MainGameplay doesn't need left-click reserved for anything exclusive
-        // (unlike MapPlacement, where left-click must stay dedicated to confirming placement),
-        // so both buttons work here for a more forgiving feel.
-        bool panPressed = Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1);
-        bool panHeld = Input.GetMouseButton(0) || Input.GetMouseButton(1);
+        bool pressed = Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1);
+        bool held = Input.GetMouseButton(0) || Input.GetMouseButton(1);
 
-        if (panPressed) lastMousePosition = Input.mousePosition;
+        if (!held) { isDragging = false; return; }
 
-        if (panHeld)
+        if (pressed)
         {
-            Vector3 delta = Input.mousePosition - lastMousePosition;
-            Vector3 right = transform.right;
-            Vector3 forwardFlat = Vector3.Cross(right, Vector3.up); // flat forward, ignoring the current tilt
-
-            Vector3 move = (-right * delta.x - forwardFlat * delta.y) * panSpeed * Time.deltaTime;
-            move.y = 0f; // height is never touched by panning - only zoom changes it
-
-            transform.position += move;
-            lastMousePosition = Input.mousePosition;
+            bool overUI = blockDragOverUI && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            isDragging = !overUI && TryGrabGround();
         }
+
+        if (!isDragging) return;
+
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        if (!dragPlane.Raycast(ray, out float enter)) return; // cursor aimed above the horizon this frame - skip it
+
+        Vector3 shift = dragAnchor - ray.GetPoint(enter);
+        shift.y = 0f;
+        transform.position += shift;
+    }
+
+    // On press: find the ground point under the cursor. Uses the terrain's own collider only, so clicking on the
+    // store, a customer or the guard still grabs the GROUND behind it rather than anchoring at roof height.
+    bool TryGrabGround()
+    {
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+
+        float planeY;
+        TerrainCollider terrainCollider = terrain != null ? terrain.GetComponent<TerrainCollider>() : null;
+        if (terrainCollider != null && terrainCollider.Raycast(ray, out RaycastHit hit, Mathf.Infinity))
+            planeY = hit.point.y;
+        else
+            planeY = storeTransform != null ? storeTransform.position.y : 0f;
+
+        // The camera only ever moves horizontally while dragging, so a flat plane at the grabbed height is exact.
+        dragPlane = new Plane(Vector3.up, new Vector3(0f, planeY, 0f));
+        if (!dragPlane.Raycast(ray, out float enter)) return false;
+
+        dragAnchor = ray.GetPoint(enter);
+        return true;
     }
 
     // Update: full rewrite - zoom no longer resizes the orthographic frustum at all. Scrolling

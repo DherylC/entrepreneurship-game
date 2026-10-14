@@ -24,8 +24,18 @@ public class MapCameraController : MonoBehaviour
     public float dragPanSpeed = 1f;
     Vector3 lastMousePosition;
 
-    [Header("Zoom (scroll wheel)")]
-    public float zoomSpeed = 10f;
+    [Header("Zoom (scroll wheel zooms toward the cursor; keys and buttons zoom toward the screen centre)")]
+    public float zoomPerNotch = 3f;        // world units per scroll notch at referenceHeight; scales with height
+    public float minHeight = 8f;           // closest the camera may get (world Y)
+    public float maxHeight = 80f;          // farthest
+    public float zoomSmoothing = 12f;      // higher = snappier, 0 or less = instant
+    public KeyCode zoomInKey = KeyCode.Equals;   // the "+" key (also KeypadPlus)
+    public KeyCode zoomOutKey = KeyCode.Minus;   // also KeypadMinus
+    public float keyZoomSpeed = 6f;        // world units per second while a zoom key is held, at referenceHeight
+    public float buttonZoomStep = 6f;      // world units per ZoomIn()/ZoomOut() call, at referenceHeight
+
+    float pendingZoom;                     // zoom distance still to apply, eased in over a few frames (+ = in, - = out)
+    Vector2 zoomFocusScreenPoint;          // screen point the pending zoom heads toward
 
     [Header("Terrain boundary - keeps the CAMERA from flying past the edges (placement itself is unaffected)")]
     public Terrain terrain;
@@ -36,6 +46,11 @@ public class MapCameraController : MonoBehaviour
         transform.eulerAngles = new Vector3(pitch, yaw, 0f); // fixed forever - nothing else ever sets this again
 
         if (focusPoint != null) SnapToFocusPoint();
+
+        // Make sure the starting height is inside the zoom limits, otherwise the first scroll would jump.
+        Vector3 startPos = transform.position;
+        startPos.y = Mathf.Clamp(startPos.y, minHeight, maxHeight);
+        transform.position = startPos;
     }
 
     // Positions the camera a fixed distance behind (opposite the view direction) and above
@@ -114,10 +129,53 @@ public class MapCameraController : MonoBehaviour
         }
     }
 
+    // Public so on-screen +/- buttons can call them from OnClick().
+    public void ZoomIn() => QueueZoom(buttonZoomStep * CurrentHeightMultiplier(), new Vector2(Screen.width, Screen.height) * 0.5f);
+    public void ZoomOut() => QueueZoom(-buttonZoomStep * CurrentHeightMultiplier(), new Vector2(Screen.width, Screen.height) * 0.5f);
+
+    void QueueZoom(float distance, Vector2 focusScreenPoint)
+    {
+        pendingZoom += distance;
+        zoomFocusScreenPoint = focusScreenPoint;
+    }
+
     void HandleZoom()
     {
+        // Scroll wheel: GetAxis gives about +-0.1 per notch, so x10 makes a notch roughly 1. Positive = zoom in.
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(scroll) > 0.0001f)
-            transform.position += transform.forward * scroll * zoomSpeed;
+            QueueZoom(scroll * 10f * zoomPerNotch * CurrentHeightMultiplier(), Input.mousePosition);
+
+        // Keys: continuous while held.
+        float keyDir = 0f;
+        if (Input.GetKey(zoomInKey) || Input.GetKey(KeyCode.KeypadPlus)) keyDir += 1f;
+        if (Input.GetKey(zoomOutKey) || Input.GetKey(KeyCode.KeypadMinus)) keyDir -= 1f;
+        if (keyDir != 0f)
+            QueueZoom(keyDir * keyZoomSpeed * CurrentHeightMultiplier() * Time.deltaTime, new Vector2(Screen.width, Screen.height) * 0.5f);
+
+        if (Mathf.Abs(pendingZoom) < 0.001f) { pendingZoom = 0f; return; }
+
+        // Ease in a fraction of the pending zoom each frame (frame-rate independent).
+        float t = zoomSmoothing <= 0f ? 1f : 1f - Mathf.Exp(-zoomSmoothing * Time.deltaTime);
+        float step = pendingZoom * t;
+        pendingZoom -= step;
+
+        // Move along the ray through the focus point: for a perspective camera this keeps whatever is under
+        // that screen point under it while zooming.
+        Camera cam = Camera.main;
+        Vector3 dir = (cam != null ? cam.ScreenPointToRay(zoomFocusScreenPoint).direction : transform.forward);
+
+        Vector3 pos = transform.position;
+        float newY = pos.y + dir.y * step; // dir points INTO the scene (downward, dir.y < 0), so zooming in (step > 0) lowers Y
+        if (Mathf.Abs(dir.y) > 0.0001f)
+        {
+            float clampedY = Mathf.Clamp(newY, minHeight, maxHeight);
+            if (!Mathf.Approximately(newY, clampedY))
+            {
+                step = (clampedY - pos.y) / dir.y; // shorten the move so it lands exactly on the limit
+                pendingZoom = 0f;                  // don't keep pushing against the limit
+            }
+        }
+        transform.position = pos + dir * step;
     }
 }
