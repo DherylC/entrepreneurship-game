@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medicine
+* source:	https://sketchfab.com/3d-models/medicine-36b77738f0b247a1b98adbafa110f48d
+* author:	Mountrise (https://sketchfab.com/Mountrise)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medicine" (https://sketchfab.com/3d-models/medicine-36b77738f0b247a1b98adbafa110f48d) by Mountrise (https://sketchfab.com/Mountrise) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
