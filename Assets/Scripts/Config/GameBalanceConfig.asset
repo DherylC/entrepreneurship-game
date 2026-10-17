@@ -17,7 +17,7 @@ MonoBehaviour:
   lowStockThreshold: 5
   openHour: 8
   closeHour: 20
-  realSecondsPerDay: 30
+  realSecondsPerDay: 90
   flatDeliveryFee: 15000
   baseCustomersPerDay: 24
   maxVisibleCustomersPerHour: 8

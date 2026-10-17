@@ -53,6 +53,13 @@ public class GameplaySceneBootstrapper : MonoBehaviour
             Debug.LogWarning("StorePrefab has no Guard (FirstPersonController) child - first person mode won't work.");
         }
 
+        var cutaway = storeInstance.GetComponentInChildren<BuildingCutaway>(true);
+        if (cutaway != null)
+        {
+            cutaway.gameplayCamera = gameplayCamera;
+            cutaway.cameraModeManager = cameraModeManager;
+        }
+
         // Update: snap the aerial gameplay camera to the store the moment it's instantiated,
         // so the player starts looking at their actual placed store, not wherever the camera
         // happened to be left in the scene by default.

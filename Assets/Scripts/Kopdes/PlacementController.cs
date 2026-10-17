@@ -35,10 +35,23 @@ public class PlacementController : MonoBehaviour
     public LotManager lotManager;
     public MapPlacementUI placementUI; // optional floating label near the cursor - no confirm button anymore
 
+    [Header("Click vs drag + confirmation modal")]
+    public MapCameraController cameraController; // its Drag Start Threshold decides what counts as a click
+    public PlacementConfirmUI confirmUI;         // the confirm / cancel modal
+
     GameObject ghostInstance;
     Vector3 currentHitPoint;
     LotData currentCategory;
     bool hasValidPlacement;
+
+    // Click detection (a click = press + release without moving past the drag threshold)
+    bool pressActive;        // a left press that started on the map (not on UI) and hasn't been released yet
+    Vector2 pressScreenPos;
+    float pressMaxTravel;
+
+    // What the modal is asking about - frozen when it opens, so moving the mouse to the buttons can't change it
+    Vector3 pendingPoint;
+    LotData pendingCategory;
 
     void Start()
     {
@@ -48,13 +61,35 @@ public class PlacementController : MonoBehaviour
 
     void Update()
     {
-        UpdateGhostPosition();
+        // While the confirmation modal is open the ghost stays frozen on the spot being confirmed.
+        if (PlacementConfirmUI.IsOpen) return;
 
-        // IsPointerOverGameObject() stops a click on UI (like a settings button) from
-        // also registering as a placement click underneath it.
-        if (hasValidPlacement && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        UpdateGhostPosition();
+        HandleClick();
+    }
+
+    // A click = press and release WITHOUT travelling past the drag threshold. Anything further is a drag,
+    // and drags belong to the camera, so they never place anything.
+    void HandleClick()
+    {
+        if (Input.GetMouseButtonDown(0))
         {
-            ConfirmPlacement();
+            // IsPointerOverGameObject() stops a press on UI (like a settings button) from placing underneath it.
+            pressActive = !EventSystem.current.IsPointerOverGameObject();
+            pressScreenPos = Input.mousePosition;
+            pressMaxTravel = 0f;
+        }
+
+        if (!pressActive) return;
+
+        pressMaxTravel = Mathf.Max(pressMaxTravel, ((Vector2)Input.mousePosition - pressScreenPos).magnitude);
+
+        if (Input.GetMouseButtonUp(0))
+        {
+            pressActive = false;
+            float threshold = cameraController != null ? cameraController.dragStartThreshold : 6f;
+            if (pressMaxTravel < threshold && hasValidPlacement)
+                OpenConfirmation();
         }
     }
 
@@ -119,10 +154,32 @@ public class PlacementController : MonoBehaviour
         return remoteLotData;
     }
 
+    // Freeze what was clicked and ask. If no modal is wired, behave like the old version and commit at once.
+    void OpenConfirmation()
+    {
+        pendingPoint = currentHitPoint;
+        pendingCategory = currentCategory;
+
+        if (placementUI != null) placementUI.HidePreview(); // the hover label would otherwise sit frozen under the modal
+
+        if (confirmUI == null)
+        {
+            ConfirmPlacement();
+            return;
+        }
+
+        confirmUI.Show(pendingCategory, ConfirmPlacement, CancelPlacement);
+    }
+
     void ConfirmPlacement()
     {
-        lotManager.ConfirmLotSelection(currentHitPoint, currentCategory);
-        // ConfirmLotSelection loads MainGameplay immediately - the day starts automatically
-        // via GameplaySceneBootstrapper -> DayManager.StartGame(), no extra step needed here.
+        lotManager.ConfirmLotSelection(pendingPoint, pendingCategory);
+        // ConfirmLotSelection stores the position in GameSessionData and loads MainGameplay immediately - the
+        // day starts automatically via GameplaySceneBootstrapper -> DayManager.StartGame(), no extra step needed.
+    }
+
+    void CancelPlacement()
+    {
+        // Nothing to undo: the modal has closed, and next frame the ghost simply follows the cursor again.
     }
 }
