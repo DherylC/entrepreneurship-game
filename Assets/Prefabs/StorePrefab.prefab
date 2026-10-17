@@ -3241,8 +3241,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BuildingCutaway
   sideAndRoof: {fileID: 6532915579723296146}
   mode: 1
-  hiddenBelowZoom: 0.438
-  visibleAboveZoom: 0.658
+  hiddenBelowZoom: 0.585
+  visibleAboveZoom: 0.873
   fadeSpeed: 4
   keepShadowsWhenHidden: 0
   transparentVariantKeeper: {fileID: 0}
