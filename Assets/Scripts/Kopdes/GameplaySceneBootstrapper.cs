@@ -32,14 +32,12 @@ public class GameplaySceneBootstrapper : MonoBehaviour
         var spawner = storeInstance.GetComponentInChildren<CustomerSpawner>();
         spawner.Initialize(GameSessionData.ChosenLot);
 
-        // Update: also find the store's theft spawn/exit points, same pattern as CustomerSpawner -
-        // DayManager needs these to actually spawn the Thief when a theft event triggers.
-        Transform theftSpawn = storeInstance.transform.Find("theftSpawnPoint");
-        Transform theftExit = storeInstance.transform.Find("theftExitPoint");
-        if (theftSpawn == null || theftExit == null)
-            Debug.LogWarning("StorePrefab is missing a ThiefSpawnPoint/ThiefExitPoint child - theft events won't be able to spawn a Thief.");
+        // Update: find the store's ThiefRoute component directly from the store instance.
+        ThiefRoute thiefRoute = storeInstance.GetComponentInChildren<ThiefRoute>();
+        if (thiefRoute == null)
+            Debug.LogWarning("StorePrefab is missing a ThiefRoute component - theft events won't be able to spawn a Thief.");
 
-        dayManager.StartGame(GameSessionData.ChosenLot, GameSessionData.ChosenLotData, spawner, theftSpawn, theftExit);
+        dayManager.StartGame(GameSessionData.ChosenLot, GameSessionData.ChosenLotData, spawner, thiefRoute);
 
         // Update: find the Guard humanoid inside the store and hand it to the camera mode toggle.
         var guard = storeInstance.GetComponentInChildren<FirstPersonController>(true);

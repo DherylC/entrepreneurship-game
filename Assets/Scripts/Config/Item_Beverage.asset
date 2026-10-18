@@ -15,4 +15,4 @@ MonoBehaviour:
   itemName: Beverage
   baseSellPrice: 4500
   flatRestockCost: 3500
-  unlockOnDay: 3
+  unlockOnDay: 4

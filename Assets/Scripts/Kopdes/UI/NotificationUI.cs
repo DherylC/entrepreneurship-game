@@ -16,6 +16,14 @@ public class NotificationUI : MonoBehaviour
         var toastObj = Instantiate(toastPrefab, toastContainer);
         toastObj.SetActive(true); // defensive - guarantees the clone is active even if the prefab source ever ends up inactive
         toastObj.transform.SetSiblingIndex(0); // newest appears at the top of the stack
+
+        // Update: forces the layout group to recalculate immediately instead of waiting for
+        // Unity's next natural layout pass - this alone doesn't fix the animation conflict (see
+        // NotificationToastUI below for that), but it does make sure the toast's SLOT position
+        // is correct from the very first frame, rather than momentarily sitting wherever the
+        // prefab was authored until something else happens to trigger a rebuild.
+        UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(toastContainer.GetComponent<RectTransform>());
+
         activeToasts.Add(toastObj);
         toastObj.GetComponent<NotificationToastUI>().Show(message, () => activeToasts.Remove(toastObj));
     }

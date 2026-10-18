@@ -15,4 +15,4 @@ MonoBehaviour:
   itemName: Stationery
   baseSellPrice: 20000
   flatRestockCost: 15000
-  unlockOnDay: 5
+  unlockOnDay: 7

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeatherEventData
   eventName: Rain
   trafficMultiplier: 0.65
-  chanceWeight: 0.2
+  chanceWeight: 0.3
   earliestTriggerHour: 8
   latestTriggerHour: 12
+  isRainType: 1

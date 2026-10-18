@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TheftEvent
   m_EditorClassIdentifier: Assembly-CSharp::TheftEventData
   dailyChance: 1
-  itemsLostIfEscaped: 8
-  earliestTriggerHour: 10
-  latestTriggerHour: 16
+  minItemsLostIfEscaped: 8
+  maxItemsLostIfEscaped: 24
+  earliestTriggerHour: 9
+  latestTriggerHour: 15

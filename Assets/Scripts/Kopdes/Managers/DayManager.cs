@@ -23,20 +23,14 @@ public class DayManager : MonoBehaviour
     bool weatherNotified;
     bool isGameOver; // Update: true once the complaint threshold is hit - freezes the day loop entirely
 
-    Transform theftSpawnPoint;
-    Transform theftExitPoint;
+    public ThiefRoute theftRoute;
 
     void Awake()
     {
         clock.OnHourTick += HandleHourTick;
     }
 
-    // Call this exactly once, right after the player's store is instantiated and their
-    // first lot is confirmed (see GameplaySceneBootstrapper below). Do NOT call BeginDay()
-    // directly from anywhere else - this is the only valid entry point into the day loop.
-    // Update: now also takes the store's theft spawn/exit points, found by GameplaySceneBootstrapper
-    // the same way CustomerSpawner was, so DayManager can actually spawn the Thief when it triggers.
-    public void StartGame(LotSite lot, LotData lotData, CustomerSpawner spawner, Transform theftSpawn, Transform theftExit)
+    public void StartGame(LotSite lot, LotData lotData, CustomerSpawner spawner, ThiefRoute route)
     {
         if (gameStarted) return; // safety guard against being called twice
         gameStarted = true;
@@ -45,13 +39,9 @@ public class DayManager : MonoBehaviour
         store.lot = lot;
         currentLotData = lotData;
         customerSpawner = spawner;
-        theftSpawnPoint = theftSpawn;
-        theftExitPoint = theftExit;
+        theftRoute = route;
         store.baseCustomersToday = Mathf.RoundToInt(config.baseCustomersPerDay); // Day 1 starting point - grows from here each day
 
-        // Update: Day 1 now starts with real stock (clamped to the capacity cap) instead of
-        // empty shelves - previously every item started at 0, meaning zero sales were possible
-        // until the first restock arrived the next morning.
         int day1Stock = Mathf.Min(config.day1StartingStockPerItem, store.upgrades.MaxStockPerItem(config));
         foreach (var item in allItems)
             store.currentStock[item] = day1Stock;
@@ -189,16 +179,16 @@ public class DayManager : MonoBehaviour
     {
         NotificationEvents.Raise("THEFT! Go to First Person and catch the thief!");
 
-        if (thiefPrefab != null && theftSpawnPoint != null && theftExitPoint != null)
+        if (thiefPrefab != null && theftRoute != null)
         {
             var thiefObj = Instantiate(thiefPrefab);
             var thief = thiefObj.GetComponent<Thief>();
             thief.dayManager = this;
-            thief.Initialize(theftSpawnPoint, theftExitPoint);
+            thief.Initialize(theftRoute);
         }
         else
         {
-            Debug.LogWarning("Theft triggered but thiefPrefab/theftSpawnPoint/theftExitPoint isn't wired - nothing was spawned.");
+            Debug.LogWarning("Theft triggered but thiefPrefab or theftRoute isn't wired - nothing was spawned.");
         }
     }
 
