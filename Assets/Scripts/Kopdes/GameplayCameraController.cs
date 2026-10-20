@@ -11,6 +11,10 @@ public class GameplayCameraController : MonoBehaviour
     public float lookAngle = 35f; // downward tilt in degrees - 30-45 gives the diagonal corner look, not top-down
     public float yaw = 45f; // fixed forever - 45 = northeast-ish corner
 
+    // Update: where the camera starts when MainGameplay loads. All of these only affect the START; scrolling and dragging work from there.
+    [Range(0f, 1f)] public float startZoom = 0f;  // 0 = start fully zoomed in (default), 1 = fully zoomed out. Note BuildingCutaway hides the walls/roof at low zoom.
+    public Vector2 startOffset = Vector2.zero;    // shifts the starting view on the ground, relative to the camera: x = right, y = forward (metres)
+
     // Update: NEW - replaces orthographic-size zoom entirely. Zooming out now raises the camera
     // and gently steepens the angle instead of just enlarging the frustum, which both looks more
     // natural and directly helps with terrain clipping (you're physically higher up when zoomed out).
@@ -56,7 +60,7 @@ public class GameplayCameraController : MonoBehaviour
         if (cam == null) cam = GetComponent<Camera>();
         cam.orthographic = useOrthographic; // Update: was hard-coded to true, which forced orthographic every time
 
-        zoomLevel = 0f; // start fully zoomed in
+        zoomLevel = Mathf.Clamp01(startZoom); // Update: was hard-coded to 0 (fully zoomed in)
         if (storeTransform != null) SnapToStore();
     }
 
@@ -75,7 +79,10 @@ public class GameplayCameraController : MonoBehaviour
         float pitchRadians = currentPitch * Mathf.Deg2Rad;
         float horizontalDistance = currentHeight / Mathf.Tan(pitchRadians); // exact distance so the view lands on the store
 
-        Vector3 target = storeTransform.position - flatForward * horizontalDistance;
+        // Update: startOffset nudges the framing so the store doesn't have to sit dead centre.
+        Vector3 flatRight = new Vector3(flatForward.z, 0f, -flatForward.x);
+        Vector3 target = storeTransform.position - flatForward * horizontalDistance
+                         + flatRight * startOffset.x + flatForward * startOffset.y;
         transform.position = new Vector3(target.x, transform.position.y, target.z); // Y already set correctly by ApplyZoomLevel
     }
 

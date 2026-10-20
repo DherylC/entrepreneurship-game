@@ -22,7 +22,7 @@ public class MainTimeUI : MonoBehaviour
 
     string LiveGameClock()
     {
-        string s = $"Day: {dayManager.currentDay}\nTime: {clock.currentHour:00}:{clock.currentMinute:00}";
+        string s = $"Day: {dayManager.currentDay} - {clock.currentHour:00}:{clock.currentMinute:00}";
         return s;
     }
 }

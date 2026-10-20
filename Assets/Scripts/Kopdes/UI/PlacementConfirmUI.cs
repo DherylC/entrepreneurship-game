@@ -62,7 +62,7 @@ public class PlacementConfirmUI : MonoBehaviour
 
         titleText.text = "Build Here?";
         detailText.text = lot != null
-            ? $"Store location will be fixed for this session.\nLot Category {lot.lotName}\nTraffic {lot.maxTrafficMultiplier:F1}x"
+            ? $"Shop location CANNOT be changed during the game.\nTraffic: {lot.maxTrafficMultiplier:F1}x"
             : "";
 
         IsOpen = true;            // set BEFORE activating - see Awake
